@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-ai-prompt-detail",
+    "title": "/api/admin/ai/prompts/<path:path>",
+    "route": "/api/admin/ai/prompts/<path:path>",
+    "category": "recipe-admin",
+    "viewuri": "",
+    "controller": "admin"
+}

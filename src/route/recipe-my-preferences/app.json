@@ -1,0 +1,8 @@
+{
+    "id": "recipe-my-preferences",
+    "title": "/api/users/me/preferences",
+    "route": "/api/users/me/preferences",
+    "category": "recipe-mypage",
+    "viewuri": "",
+    "controller": "user"
+}

@@ -70,11 +70,18 @@ export default class Wiz {
     }
 
     public call(function_name: string, data = {}, options = {}) {
+        let csrfToken = (window as any).recipeCsrfToken || '';
+        let optionHeaders = (options as any).headers || {};
+        let headers = {
+            ...optionHeaders,
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        };
         let ajax = {
             url: this.url(function_name),
             type: "POST",
             data: data,
-            ...options
+            ...options,
+            headers: headers,
         };
 
         return new Promise((resolve) => {

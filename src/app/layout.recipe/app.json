@@ -1,0 +1,10 @@
+{
+    "mode": "layout",
+    "id": "layout.recipe",
+    "title": "Recipe Layout",
+    "namespace": "recipe",
+    "viewuri": "",
+    "category": "recipe",
+    "controller": "base",
+    "template": "wiz-layout-recipe()"
+}

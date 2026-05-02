@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-edit-request-status",
+    "title": "/api/admin/edit-requests/<request_id>/status",
+    "route": "/api/admin/edit-requests/<request_id>/status",
+    "category": "recipe-feedback",
+    "viewuri": "",
+    "controller": "admin"
+}

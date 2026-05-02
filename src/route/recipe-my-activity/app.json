@@ -1,0 +1,8 @@
+{
+    "id": "recipe-my-activity",
+    "title": "/api/users/me/activity",
+    "route": "/api/users/me/activity",
+    "category": "recipe-mypage",
+    "viewuri": "",
+    "controller": "user"
+}

@@ -1,0 +1,8 @@
+{
+    "id": "recipe-favorite",
+    "title": "/api/recipes/<version_id>/favorite",
+    "route": "/api/recipes/<version_id>/favorite",
+    "category": "recipe-engagement",
+    "viewuri": "",
+    "controller": "user"
+}

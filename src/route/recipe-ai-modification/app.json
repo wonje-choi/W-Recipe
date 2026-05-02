@@ -1,0 +1,8 @@
+{
+    "id": "recipe-ai-modification",
+    "title": "/api/ai/recipe-modifications",
+    "route": "/api/ai/recipe-modifications",
+    "category": "recipe-ai",
+    "viewuri": "",
+    "controller": "user"
+}

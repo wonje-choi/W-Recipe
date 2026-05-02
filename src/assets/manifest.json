@@ -1,0 +1,18 @@
+{
+    "name": "Recipe Taste Optimizer",
+    "short_name": "Recipe Taste",
+    "description": "Korean recipe discovery, review, and AI-assisted diet adaptation.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#059669",
+    "icons": [
+        {
+            "src": "/assets/brand/icon.ico",
+            "sizes": "72x72 114x114 192x192",
+            "type": "image/x-icon",
+            "purpose": "any"
+        }
+    ]
+}

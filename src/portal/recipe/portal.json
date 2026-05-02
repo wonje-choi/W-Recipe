@@ -1,0 +1,12 @@
+{
+    "package": "recipe",
+    "title": "Recipe Taste Optimizer",
+    "version": "0.1.0",
+    "use_app": false,
+    "use_route": false,
+    "use_libs": true,
+    "use_styles": false,
+    "use_assets": false,
+    "use_controller": false,
+    "use_model": true
+}

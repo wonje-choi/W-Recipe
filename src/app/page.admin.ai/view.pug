@@ -1,0 +1,290 @@
+section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
+    div(class="mx-auto flex max-w-7xl flex-col gap-4")
+        header(class="flex flex-col gap-3 border-b border-zinc-200 pb-4 lg:flex-row lg:items-end lg:justify-between")
+            div
+                p(class="text-xs font-medium text-emerald-700") 관리자
+                h1(class="mt-1 text-lg font-semibold text-zinc-950") AI 관리
+                p(class="mt-1 text-[13px] text-zinc-600") 검수 대기, 프롬프트 버전, 처리 로그를 관리합니다.
+            div(class="flex flex-wrap items-center gap-2")
+                button(type="button", (click)="setTab('reviews')", [ngClass]="activeTab === 'reviews' ? 'bg-zinc-950 text-white' : 'border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100'", class="rounded-md px-3 py-2 text-[13px] font-medium") 검수
+                button(type="button", (click)="setTab('prompts')", [ngClass]="activeTab === 'prompts' ? 'bg-zinc-950 text-white' : 'border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100'", class="rounded-md px-3 py-2 text-[13px] font-medium") 프롬프트
+                button(type="button", (click)="setTab('logs')", [ngClass]="activeTab === 'logs' ? 'bg-zinc-950 text-white' : 'border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100'", class="rounded-md px-3 py-2 text-[13px] font-medium") 로그
+                button(type="button", (click)="setTab('settings')", [ngClass]="activeTab === 'settings' ? 'bg-zinc-950 text-white' : 'border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100'", class="rounded-md px-3 py-2 text-[13px] font-medium") 설정
+
+        div(*ngIf="message", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700") {{ message }}
+        div(*ngIf="loading", class="rounded-lg border border-zinc-200 bg-white p-8 text-center text-[13px] text-zinc-500") AI 관리 데이터를 불러오는 중입니다.
+
+        div(*ngIf="!loading && activeTab === 'settings'", class="grid gap-4 lg:grid-cols-2")
+            div(class="rounded-lg border border-zinc-200 bg-white p-4")
+                div(class="flex items-center justify-between gap-3")
+                    div
+                        p(class="text-[13px] font-semibold text-zinc-950") 자동 승인 임계값
+                        p(class="mt-1 text-xs text-zinc-500") 신뢰도 점수가 임계값 이상이면 검수 대기 없이 승인됩니다.
+                    span(class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700") {{ settings.autoApproveThreshold }}
+                input(type="range", min="0", max="1", step="0.01", [(ngModel)]="settings.autoApproveThreshold", name="settingsAutoApproveThreshold", class="mt-4 block w-full accent-emerald-600")
+                p(*ngIf="settingsMessage", class="mt-3 text-xs text-amber-700") {{ settingsMessage }}
+                button(type="button", (click)="saveSettings()", class="mt-4 rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700") 설정 저장
+            div(class="rounded-lg border border-zinc-200 bg-white p-4")
+                div(class="flex items-start justify-between gap-3")
+                    div
+                        p(class="text-[13px] font-semibold text-zinc-950") YouTube API Key
+                        p(class="mt-1 text-xs text-zinc-500") YouTube Data API v3 키를 저장합니다.
+                    span([ngClass]="settings.youtubeApiKeyConfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'", class="rounded-md px-2.5 py-1 text-xs font-semibold") {{ settings.youtubeApiKeyConfigured ? '등록됨' : '미등록' }}
+                input(type="password", [(ngModel)]="settings.youtubeApiKey", name="settingsYoutubeApiKey", class="mt-4 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="새 API Key 입력")
+                p(class="mt-3 text-xs text-zinc-500") 현재 키: {{ settings.youtubeApiKeyMasked || '없음' }}
+                button(type="button", (click)="saveSettings()", class="mt-4 rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700") Key 저장
+
+        div(*ngIf="!loading && activeTab === 'reviews'", class="grid gap-4 xl:grid-cols-[minmax(0,420px)_1fr]")
+            div(class="flex min-w-0 flex-col gap-3")
+                div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                    div(class="flex items-center justify-between gap-3")
+                        div
+                            p(class="text-[13px] font-semibold text-zinc-950") 자동 승인 임계값
+                            p(class="mt-1 text-xs text-zinc-500") 신뢰도 점수가 임계값 이상이면 검수 대기 없이 승인됩니다.
+                        span(class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700") {{ settings.autoApproveThreshold }}
+                    input(type="range", min="0", max="1", step="0.01", [(ngModel)]="settings.autoApproveThreshold", name="autoApproveThreshold", class="mt-3 block w-full accent-emerald-600")
+                    div(class="mt-3 flex items-center justify-between gap-3")
+                        p(class="text-xs text-amber-700") {{ settingsMessage }}
+                        button(type="button", (click)="saveSettings()", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100") 설정 저장
+                div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                    div(class="flex items-start justify-between gap-3")
+                        div
+                            p(class="text-[13px] font-semibold text-zinc-950") YouTube API Key
+                            p(class="mt-1 text-xs text-zinc-500") 업로드 메타데이터 준비와 실제 업로드 호출에 사용할 Data API v3 키입니다.
+                        span([ngClass]="settings.youtubeApiKeyConfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'", class="rounded-md px-2.5 py-1 text-xs font-semibold") {{ settings.youtubeApiKeyConfigured ? '등록됨' : '미등록' }}
+                    input(type="password", [(ngModel)]="settings.youtubeApiKey", name="youtubeApiKey", class="mt-3 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="새 API Key 입력")
+                    div(class="mt-3 flex items-center justify-between gap-3")
+                        p(class="text-xs text-zinc-500") 현재 키: {{ settings.youtubeApiKeyMasked || '없음' }}
+                        button(type="button", (click)="saveSettings()", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") Key 저장
+                div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                    div(class="grid gap-2 sm:grid-cols-2")
+                        select([(ngModel)]="reviewFilters.status", name="aiReviewStatus", (change)="loadReviews(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="all") 모든 상태
+                            option(*ngFor="let status of options.aiStatuses", [value]="status.value") {{ status.label }}
+                        select([(ngModel)]="reviewFilters.purpose", name="aiReviewPurpose", (change)="loadReviews(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="") 모든 목적
+                            option(*ngFor="let purpose of options.purposes", [value]="purpose.value") {{ purpose.label }}
+                div(*ngIf="reviewMessage", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800") {{ reviewMessage }}
+                div(class="overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        p(class="text-[13px] font-semibold text-zinc-900") AI 결과 {{ reviewTotal }}건
+                        button(type="button", (click)="loadReviews()", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+                    div(*ngIf="reviewLoading", class="p-6 text-center text-[13px] text-zinc-500") 검수 목록을 불러오는 중입니다.
+                    div(*ngIf="!reviewLoading", class="divide-y divide-zinc-100")
+                        button(*ngFor="let item of reviewItems", type="button", (click)="selectReview(item)", [ngClass]="selectedReview?.id === item.id ? 'bg-emerald-50' : 'bg-white hover:bg-zinc-50'", class="block w-full px-4 py-3 text-left")
+                            div(class="flex items-start justify-between gap-3")
+                                div(class="min-w-0")
+                                    p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.dish?.name || item.version?.title || item.id }}
+                                    p(class="mt-1 line-clamp-2 text-xs text-zinc-500") {{ item.improvementReason || item.originalSummary || '요약 없음' }}
+                                span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.statusLabel }}
+                            div(class="mt-2 flex flex-wrap items-center gap-1.5")
+                                span(class="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600") {{ item.purposeLabel }}
+                                span(class="rounded bg-sky-50 px-2 py-0.5 text-[11px] text-sky-700") 신뢰도 {{ item.confidenceScore }}
+                                span(*ngIf="item.safety?.hasRisk", class="rounded bg-rose-50 px-2 py-0.5 text-[11px] text-rose-700") 위험 {{ item.riskFlags.length }}
+                                span(class="text-[11px] text-zinc-400") {{ item.createdAt }}
+                        div(*ngIf="reviewItems.length === 0", class="p-8 text-center text-[13px] text-zinc-500") 조건에 맞는 AI 결과가 없습니다.
+                    div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="previous('reviews')", [disabled]="reviewPage <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                        p(class="text-xs text-zinc-500") {{ reviewPage }} / {{ totalPages(reviewTotal) }}
+                        button(type="button", (click)="next('reviews')", [disabled]="reviewPage >= totalPages(reviewTotal)", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음
+
+            div(class="min-w-0 rounded-lg border border-zinc-200 bg-white")
+                div(*ngIf="!selectedReview", class="p-8 text-center text-[13px] text-zinc-500") 검수할 AI 결과를 선택하세요.
+                div(*ngIf="selectedReview")
+                    div(class="border-b border-zinc-200 px-5 py-4")
+                        div(class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between")
+                            div(class="min-w-0")
+                                p(class="text-xs font-medium text-emerald-700") {{ selectedReview.purposeLabel }}
+                                h2(class="mt-1 text-[15px] font-semibold text-zinc-950") {{ selectedReview.dish?.name || selectedReview.version?.title || selectedReview.id }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ selectedReview.version?.title || '연결된 버전 없음' }}
+                            span([ngClass]="statusClass(selectedReview.status)", class="inline-flex rounded border px-2.5 py-1 text-xs font-medium") {{ selectedReview.statusLabel }}
+                        div(class="mt-4 grid gap-3 md:grid-cols-4")
+                            div(class="rounded-md bg-zinc-50 p-3")
+                                p(class="text-xs text-zinc-500") 위험 요약
+                                p(class="mt-1 text-[13px] font-medium text-zinc-900") {{ selectedReview.safety?.summary }}
+                            div(class="rounded-md bg-zinc-50 p-3")
+                                p(class="text-xs text-zinc-500") 알레르기
+                                p(class="mt-1 text-[13px] font-medium text-zinc-900") {{ selectedReview.allergenWarnings.length || selectedReview.version?.allergenInfo?.length || 0 }}건
+                            div(class="rounded-md bg-zinc-50 p-3")
+                                p(class="text-xs text-zinc-500") 생성일
+                                p(class="mt-1 text-[13px] font-medium text-zinc-900") {{ selectedReview.createdAt }}
+                            div(class="rounded-md bg-zinc-50 p-3")
+                                p(class="text-xs text-zinc-500") 신뢰도
+                                p(class="mt-1 text-[13px] font-medium text-zinc-900") {{ selectedReview.confidenceScore }}
+                    div(class="grid gap-4 p-5 lg:grid-cols-2")
+                        section(class="space-y-3")
+                            h3(class="text-[15px] font-semibold text-zinc-950") 원본 요약
+                            p(class="rounded-md bg-zinc-50 p-3 text-[13px] leading-6 text-zinc-700") {{ selectedReview.originalSummary || '원본 요약이 없습니다.' }}
+                            h3(class="text-[15px] font-semibold text-zinc-950") 변경점
+                            div(class="rounded-md border border-zinc-200 p-3")
+                                p(class="text-xs font-medium text-zinc-500") 개선 이유
+                                p(class="mt-1 text-[13px] leading-6 text-zinc-800") {{ selectedReview.improvementReason || '-' }}
+                                p(class="mt-3 text-xs font-medium text-zinc-500") 맛 보완
+                                p(class="mt-1 text-[13px] leading-6 text-zinc-800") {{ selectedReview.tasteImprovementPoint || '-' }}
+                                p(class="mt-3 text-xs font-medium text-zinc-500") 저염 적합성
+                                p(class="mt-1 text-[13px] leading-6 text-zinc-800") {{ selectedReview.sodiumReductionPoint || '별도 저염 조정 없음' }}
+                                p(class="mt-3 text-xs font-medium text-zinc-500") 이유식 적합성
+                                p(class="mt-1 text-[13px] leading-6 text-zinc-800") {{ selectedReview.babyFoodSafetyNotes || '별도 이유식 조정 없음' }}
+                        section(class="space-y-3")
+                            h3(class="text-[15px] font-semibold text-zinc-950") 위험 요소
+                            div(class="flex flex-wrap gap-1.5")
+                                span(*ngFor="let flag of selectedReview.riskFlags", class="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-700") {{ flag }}
+                                span(*ngIf="selectedReview.riskFlags.length === 0", class="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700") 위험 후보 없음
+                            div(class="space-y-2")
+                                article(*ngFor="let issue of selectedReview.safety?.issues", [ngClass]="riskClass(issue.severity)", class="rounded-md border p-3")
+                                    p(class="text-[13px] font-semibold") {{ issue.message }}
+                                    p(class="mt-1 text-xs") {{ issue.type }} · {{ issue.matched?.join(', ') || '-' }}
+                            div(class="rounded-md border border-zinc-200 p-3")
+                                p(class="text-xs font-medium text-zinc-500") 알레르기 경고
+                                ul(class="mt-2 list-disc space-y-1 pl-5 text-[13px] text-zinc-700")
+                                    li(*ngFor="let warning of selectedReview.allergenWarnings") {{ warning }}
+                                    li(*ngIf="selectedReview.allergenWarnings.length === 0") 등록된 알레르기 경고가 없습니다.
+                            div(class="rounded-md border border-zinc-200 p-3")
+                                p(class="text-xs font-medium text-zinc-500") 주의 문구
+                                ul(class="mt-2 list-disc space-y-1 pl-5 text-[13px] text-zinc-700")
+                                    li(*ngFor="let note of selectedReview.cautionNotes") {{ note }}
+                                    li(*ngIf="selectedReview.cautionNotes.length === 0") 등록된 주의 문구가 없습니다.
+                    div(class="grid gap-4 border-t border-zinc-200 p-5 lg:grid-cols-2")
+                        section
+                            h3(class="text-[15px] font-semibold text-zinc-950") 개량 재료
+                            ol(class="mt-3 space-y-2 text-[13px] text-zinc-700")
+                                li(*ngFor="let ingredient of selectedReview.modifiedIngredients; let idx = index", class="flex gap-2")
+                                    span(class="text-xs text-zinc-400") {{ idx + 1 }}
+                                    span {{ ingredient }}
+                        section
+                            h3(class="text-[15px] font-semibold text-zinc-950") 개량 단계
+                            ol(class="mt-3 space-y-2 text-[13px] text-zinc-700")
+                                li(*ngFor="let step of selectedReview.modifiedSteps; let idx = index", class="flex gap-2")
+                                    span(class="text-xs text-zinc-400") {{ idx + 1 }}
+                                    span {{ step }}
+                    div(class="border-t border-zinc-200 p-5")
+                        label(class="block text-xs font-medium text-zinc-600") 검수 메모
+                            textarea([(ngModel)]="reviewReason", name="reviewReason", rows="3", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="반려 또는 재검토 사유")
+                        div(class="mt-3 flex flex-wrap justify-end gap-2")
+                            button(type="button", (click)="regenerateReview()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 재생성
+                            button(type="button", (click)="reviewAction('reject')", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100") 반려
+                            button(type="button", (click)="reviewAction('approve')", class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700") 승인
+
+        div(*ngIf="!loading && activeTab === 'prompts'", class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]")
+            div(class="flex min-w-0 flex-col gap-3")
+                div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                    div(class="grid gap-2 sm:grid-cols-[1fr_160px_auto]")
+                        select([(ngModel)]="promptFilters.promptKey", name="promptKeyFilter", (change)="loadPrompts(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="") 모든 프롬프트
+                            option(*ngFor="let item of options.promptTypes", [value]="item.value") {{ item.label }}
+                        select([(ngModel)]="promptFilters.isActive", name="promptActiveFilter", (change)="loadPrompts(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="") 전체
+                            option(value="true") 활성
+                            option(value="false") 비활성
+                        button(type="button", (click)="newPrompt()", class="rounded-md bg-emerald-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-700") 새 프롬프트
+                div(class="overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        p(class="text-[13px] font-semibold text-zinc-900") 프롬프트 {{ promptTotal }}개
+                        button(type="button", (click)="loadPrompts()", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+                    div(*ngIf="promptLoading", class="p-6 text-center text-[13px] text-zinc-500") 프롬프트를 불러오는 중입니다.
+                    div(*ngIf="!promptLoading", class="divide-y divide-zinc-100")
+                        button(*ngFor="let prompt of promptItems", type="button", (click)="editPrompt(prompt)", [ngClass]="promptForm.id === prompt.id ? 'bg-emerald-50' : 'bg-white hover:bg-zinc-50'", class="block w-full px-4 py-3 text-left")
+                            div(class="flex items-start justify-between gap-3")
+                                div(class="min-w-0")
+                                    p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ prompt.title || prompt.promptVersion }}
+                                    p(class="mt-1 text-xs text-zinc-500") {{ prompt.promptKeyLabel }} · {{ prompt.version }} · {{ prompt.modelHint || '-' }}
+                                span([ngClass]="prompt.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-zinc-50 text-zinc-500 border-zinc-200'", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ prompt.isActive ? '활성' : '비활성' }}
+                            p(class="mt-2 line-clamp-2 text-xs text-zinc-500") {{ prompt.description || prompt.changeReason || '설명 없음' }}
+                        div(*ngIf="promptItems.length === 0", class="p-8 text-center text-[13px] text-zinc-500") 등록된 프롬프트가 없습니다.
+                    div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="previous('prompts')", [disabled]="promptPage <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                        p(class="text-xs text-zinc-500") {{ promptPage }} / {{ totalPages(promptTotal) }}
+                        button(type="button", (click)="next('prompts')", [disabled]="promptPage >= totalPages(promptTotal)", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음
+
+            aside(class="rounded-lg border border-zinc-200 bg-white")
+                div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                    div
+                        p(class="text-[13px] font-semibold text-zinc-950") {{ promptForm.id ? '프롬프트 수정' : '새 프롬프트' }}
+                        p(class="mt-0.5 text-xs text-zinc-500") {{ promptForm.id || '신규 버전' }}
+                    div(class="flex gap-2")
+                        button(*ngIf="promptForm.id && !promptForm.isActive", type="button", (click)="promptAction('activate')", class="rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white") 활성화
+                        button(*ngIf="promptForm.id && promptForm.isActive", type="button", (click)="promptAction('deactivate')", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700") 비활성
+                div(class="flex max-h-[calc(100vh-180px)] flex-col gap-3 overflow-auto p-4")
+                    div(*ngIf="promptMessage", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800") {{ promptMessage }}
+                    div(class="grid gap-3 sm:grid-cols-2")
+                        label(class="block text-xs font-medium text-zinc-600") 유형
+                            select([(ngModel)]="promptForm.promptKey", name="promptFormKey", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(*ngFor="let item of options.promptTypes", [value]="item.value") {{ item.label }}
+                        label(class="block text-xs font-medium text-zinc-600") 버전
+                            input(type="text", [(ngModel)]="promptForm.version", name="promptFormVersion", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="v1")
+                    label(class="block text-xs font-medium text-zinc-600") 제목
+                        input(type="text", [(ngModel)]="promptForm.title", name="promptFormTitle", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    label(class="block text-xs font-medium text-zinc-600") 설명
+                        textarea([(ngModel)]="promptForm.description", name="promptFormDescription", rows="2", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    label(class="block text-xs font-medium text-zinc-600") 템플릿
+                        textarea([(ngModel)]="promptForm.template", name="promptFormTemplate", rows="8", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    div(class="grid gap-3 sm:grid-cols-2")
+                        label(class="block text-xs font-medium text-zinc-600") 입력 스키마 JSON
+                            textarea([(ngModel)]="promptForm.inputSchemaText", name="promptInputSchema", rows="5", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                        label(class="block text-xs font-medium text-zinc-600") 출력 스키마 JSON
+                            textarea([(ngModel)]="promptForm.outputSchemaText", name="promptOutputSchema", rows="5", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    div(class="grid gap-3 sm:grid-cols-2")
+                        label(class="block text-xs font-medium text-zinc-600") 모델 힌트
+                            input(type="text", [(ngModel)]="promptForm.modelHint", name="promptModelHint", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                        label(class="flex items-center gap-2 pt-6 text-xs font-medium text-zinc-700")
+                            input(type="checkbox", [(ngModel)]="promptForm.isActive", name="promptIsActive", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600")
+                            span 저장 후 활성 상태
+                    label(class="block text-xs font-medium text-zinc-600") 변경 사유
+                        textarea([(ngModel)]="promptForm.changeReason", name="promptChangeReason", rows="2", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                div(class="flex justify-end gap-2 border-t border-zinc-200 px-4 py-3")
+                    button(type="button", (click)="newPrompt()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+                    button(type="button", (click)="savePrompt()", class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700") 저장
+
+        div(*ngIf="!loading && activeTab === 'logs'", class="flex flex-col gap-4")
+            div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                div(class="grid gap-2 md:grid-cols-[180px_220px_auto]")
+                    select([(ngModel)]="logFilters.status", name="aiLogStatus", (change)="loadLogs(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                        option(value="") 모든 상태
+                        option(*ngFor="let status of options.logStatuses", [value]="status.value") {{ status.label }}
+                    select([(ngModel)]="logFilters.requestType", name="aiLogRequestType", (change)="loadLogs(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                        option(value="") 모든 요청 유형
+                        option(*ngFor="let item of options.purposes", [value]="item.value") {{ item.label }}
+                        option(*ngFor="let item of options.promptTypes", [value]="item.value") {{ item.label }}
+                    button(type="button", (click)="loadLogs(1)", class="rounded-md bg-zinc-900 px-3 py-2 text-[13px] font-medium text-white hover:bg-zinc-700") 조회
+            div(class="grid gap-3 sm:grid-cols-3")
+                div(class="rounded-lg border border-zinc-200 bg-white p-4")
+                    p(class="text-xs text-zinc-500") 로그 수
+                    p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ logTotal }}
+                div(class="rounded-lg border border-zinc-200 bg-white p-4")
+                    p(class="text-xs text-zinc-500") 표시 토큰
+                    p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ logTokenTotal }}
+                div(class="rounded-lg border border-zinc-200 bg-white p-4")
+                    p(class="text-xs text-zinc-500") 표시 비용
+                    p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ logCostTotal }}
+            div(class="overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                div(*ngIf="logLoading", class="p-8 text-center text-[13px] text-zinc-500") 로그를 불러오는 중입니다.
+                div(class="overflow-x-auto", *ngIf="!logLoading")
+                    table(class="min-w-full divide-y divide-zinc-200 text-left text-[13px]")
+                        thead(class="bg-zinc-50 text-xs font-semibold text-zinc-500")
+                            tr
+                                th(class="px-4 py-3") 요청
+                                th(class="px-4 py-3") 상태
+                                th(class="px-4 py-3") 프롬프트
+                                th(class="px-4 py-3") 토큰/비용
+                                th(class="px-4 py-3") 결과
+                                th(class="px-4 py-3") 일시
+                        tbody(class="divide-y divide-zinc-100 bg-white")
+                            tr(*ngFor="let log of logItems", class="align-top hover:bg-zinc-50")
+                                td(class="px-4 py-3")
+                                    p(class="font-medium text-zinc-900") {{ log.requestTypeLabel }}
+                                    p(class="mt-1 text-xs text-zinc-500") {{ log.targetId || '-' }}
+                                td(class="px-4 py-3")
+                                    span([ngClass]="statusClass(log.status)", class="rounded border px-2 py-1 text-xs font-medium") {{ log.statusLabel }}
+                                td(class="px-4 py-3 text-zinc-600") {{ log.promptVersion || '-' }}
+                                td(class="px-4 py-3 text-zinc-600")
+                                    p {{ log.tokenTotal }} tokens
+                                    p(class="text-xs text-zinc-500") {{ log.costEstimate }}
+                                td(class="px-4 py-3")
+                                    p(class="line-clamp-2 text-zinc-700") {{ log.errorMessage || log.outputSummary || log.inputSummary || '-' }}
+                                td(class="px-4 py-3 text-xs text-zinc-500") {{ log.finishedAt || log.startedAt || log.createdAt }}
+                            tr(*ngIf="logItems.length === 0")
+                                td(colspan="6", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 로그가 없습니다.
+                div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                    button(type="button", (click)="previous('logs')", [disabled]="logPage <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                    p(class="text-xs text-zinc-500") {{ logPage }} / {{ totalPages(logTotal) }}
+                    button(type="button", (click)="next('logs')", [disabled]="logPage >= totalPages(logTotal)", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음

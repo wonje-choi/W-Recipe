@@ -1,0 +1,8 @@
+{
+    "id": "recipe-recent-views",
+    "title": "/api/users/me/recent-views",
+    "route": "/api/users/me/recent-views",
+    "category": "recipe-engagement",
+    "viewuri": "",
+    "controller": "user"
+}

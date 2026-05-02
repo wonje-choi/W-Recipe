@@ -1,0 +1,11 @@
+{
+    "mode": "page",
+    "id": "page.recipe.home",
+    "title": "/",
+    "namespace": "recipe.home",
+    "viewuri": "/",
+    "category": "recipe",
+    "controller": "base",
+    "layout": "layout.recipe",
+    "template": "wiz-page-recipe-home()"
+}

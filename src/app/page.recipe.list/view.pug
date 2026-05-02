@@ -1,0 +1,130 @@
+section(class="border-b border-zinc-200 bg-white")
+    div(class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8")
+        div(class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between")
+            div
+                h1(class="text-2xl font-semibold tracking-normal text-zinc-950") {{ isLowSodiumPreset() ? '저염레시피' : (isBabyFoodPreset() ? '이유식레시피' : '레시피') }}
+                p(class="mt-2 text-[13px] leading-6 text-zinc-500") {{ isLowSodiumPreset() ? '나트륨 부담을 낮추는 조리 포인트와 맛 보완 팁을 함께 확인합니다.' : (isBabyFoodPreset() ? '월령 단계와 안전 확인 항목을 함께 보며 승인된 이유식 레시피를 찾습니다.' : '검색, 카테고리, 태그, 정렬로 승인된 레시피를 찾습니다.') }}
+            form(class="flex w-full flex-col gap-2 sm:flex-row lg:max-w-xl", (submit)="$event.preventDefault(); applyFilters()")
+                input(type="search", [(ngModel)]="filters.text", name="recipeListSearch", class="min-h-[40px] flex-1 rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="레시피, 재료, 태그 검색")
+                button(type="submit", class="min-h-[40px] rounded-md bg-emerald-600 px-4 text-[13px] font-semibold text-white hover:bg-emerald-700") 검색
+
+section(*ngIf="isLowSodiumPreset()", class="border-b border-zinc-200 bg-sky-50")
+    div(class="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:px-8")
+        div(class="rounded-md border border-sky-100 bg-white p-4")
+            div(class="flex items-start gap-3")
+                div(class="flex size-9 shrink-0 items-center justify-center rounded-md bg-sky-100 text-[15px] font-semibold text-sky-700") Na
+                div
+                    h2(class="text-[15px] font-semibold text-zinc-950") 나트륨 확인 포인트
+                    p(class="mt-1 text-[13px] leading-6 text-zinc-600") 소금과 장류, 가공육, 치즈처럼 짠맛이 강한 재료를 확인하고 향·산미·감칠맛으로 균형을 맞춘 버전을 우선 노출합니다.
+            p(class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800") {{ lowSodium.healthNotice }}
+        div(class="rounded-md border border-sky-100 bg-white p-4")
+            h2(class="text-[15px] font-semibold text-zinc-950") 맛 보완 재료
+            div(class="mt-3 flex flex-wrap gap-2")
+                span(*ngFor="let item of lowSodium.flavorComplements", class="rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800") {{ item }}
+            p(class="mt-3 text-xs leading-5 text-zinc-500") 짠맛 자체를 키우기보다 향, 산미, 고소함, 감칠맛을 조합해 만족감을 보완합니다.
+
+section(*ngIf="isBabyFoodPreset()", class="border-b border-zinc-200 bg-amber-50")
+    div(class="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:px-8")
+        div(class="rounded-md border border-amber-100 bg-white p-4")
+            h2(class="text-[15px] font-semibold text-zinc-950") 월령과 입자 크기 확인
+            div(class="mt-3 grid gap-2 sm:grid-cols-2")
+                button(*ngFor="let stage of babyStageOptions()", type="button", class="rounded-md border px-3 py-2 text-left text-[13px]", [class.border-amber-400]="filters.babyStage === stage.value", [class.bg-amber-50]="filters.babyStage === stage.value", [class.text-amber-800]="filters.babyStage === stage.value", [class.border-zinc-200]="filters.babyStage !== stage.value", [class.text-zinc-700]="filters.babyStage !== stage.value", (click)="goBabyStage(stage.value)")
+                    span(class="block font-semibold") {{ stage.label }}
+                    span(class="mt-1 block text-xs text-zinc-500") {{ stage.age }} · {{ stage.particle }}
+            button(type="button", class="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50", (click)="goBabyStage('')") 단계 전체
+        div(class="rounded-md border border-amber-100 bg-white p-4")
+            h2(class="text-[15px] font-semibold text-zinc-950") 안전 확인 항목
+            div(class="mt-3 flex flex-wrap gap-2")
+                span(*ngFor="let keyword of babyFood.safetyKeywords", class="rounded-md bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700") {{ keyword }}
+            p(class="mt-3 rounded-md bg-white px-3 py-2 text-xs leading-5 text-amber-800 ring-1 ring-amber-100") {{ babyFood.guardianNotice }}
+
+section(class="bg-zinc-50")
+    div(class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8")
+        div(class="mb-4 flex items-center justify-between gap-3 lg:hidden")
+            div(class="text-[13px] font-medium text-zinc-700") 필터와 정렬
+            button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700", (click)="toggleFilters()") {{ filtersOpen ? '닫기' : '열기' }}
+
+        div(class="grid gap-5 lg:grid-cols-[260px_1fr]")
+            aside(class="space-y-4 lg:block", [class.hidden]="!filtersOpen")
+                div(class="rounded-md border border-zinc-200 bg-white p-4")
+                    h2(class="text-[15px] font-semibold text-zinc-950") 빠른 분류
+                    div(class="mt-3 grid gap-2")
+                        button(*ngFor="let option of presetOptions", type="button", class="rounded-md px-3 py-2 text-left text-[13px] font-medium", [class.bg-emerald-50]="filters.preset === option.value", [class.text-emerald-800]="filters.preset === option.value", [class.text-zinc-600]="filters.preset !== option.value", (click)="goPreset(option)") {{ option.label }}
+
+                div(class="rounded-md border border-zinc-200 bg-white p-4")
+                    h2(class="text-[15px] font-semibold text-zinc-950") 카테고리
+                    select([(ngModel)]="filters.category", name="category", class="mt-3 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", [disabled]="!!filters.preset")
+                        option(value="") 전체
+                        option(*ngFor="let category of categories", [value]="category") {{ category }}
+
+                div(class="rounded-md border border-zinc-200 bg-white p-4")
+                    h2(class="text-[15px] font-semibold text-zinc-950") 태그
+                    div(class="mt-3 flex flex-wrap gap-2")
+                        button(type="button", class="rounded-md border px-2.5 py-1.5 text-xs", [class.border-emerald-300]="!filters.tag", [class.bg-emerald-50]="!filters.tag", [class.text-emerald-800]="!filters.tag", [class.border-zinc-200]="!!filters.tag", [class.text-zinc-600]="!!filters.tag", (click)="filters.tag = ''; applyFilters()") 전체
+                        button(*ngFor="let tag of tags", type="button", class="rounded-md border px-2.5 py-1.5 text-xs", [class.border-emerald-300]="filters.tag === tag", [class.bg-emerald-50]="filters.tag === tag", [class.text-emerald-800]="filters.tag === tag", [class.border-zinc-200]="filters.tag !== tag", [class.text-zinc-600]="filters.tag !== tag", [disabled]="!!filters.preset", (click)="filters.tag = tag; applyFilters()") {{ tag }}
+
+                div(class="rounded-md border border-zinc-200 bg-white p-4")
+                    h2(class="text-[15px] font-semibold text-zinc-950") 정렬
+                    select([(ngModel)]="filters.sort", name="sort", class="mt-3 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", (change)="applyFilters()")
+                        option(*ngFor="let option of sortOptions", [value]="option.value") {{ option.label }}
+                    div(class="mt-3 flex gap-2")
+                        button(type="button", class="flex-1 rounded-md bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-white hover:bg-zinc-800", (click)="applyFilters()") 적용
+                        button(type="button", class="flex-1 rounded-md border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100", (click)="resetFilters()") 초기화
+
+            div(class="min-w-0")
+                div(class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between")
+                    div(class="text-[13px] text-zinc-500") 총 {{ total }}개
+                    div(class="flex flex-wrap gap-2")
+                        span(*ngIf="filters.text", class="rounded-md bg-white px-2.5 py-1.5 text-xs text-zinc-600") 검색: {{ filters.text }}
+                        span(*ngIf="filters.category", class="rounded-md bg-white px-2.5 py-1.5 text-xs text-zinc-600") {{ filters.category }}
+                        span(*ngIf="filters.tag", class="rounded-md bg-white px-2.5 py-1.5 text-xs text-zinc-600") {{ '#' + filters.tag }}
+                        span(*ngIf="filters.babyStage", class="rounded-md bg-white px-2.5 py-1.5 text-xs text-zinc-600") 이유식 단계: {{ selectedBabyStageLabel() }}
+
+                div(*ngIf="loading", class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3")
+                    div(*ngFor="let item of [1,2,3,4,5,6]", class="h-[300px] animate-pulse rounded-md bg-white")
+
+                div(*ngIf="!loading && items.length === 0", class="rounded-md border border-dashed border-zinc-300 bg-white px-4 py-12 text-center")
+                    h2(class="text-[15px] font-semibold text-zinc-950") 검색 결과가 없습니다
+                    p(class="mt-2 text-[13px] text-zinc-500") 조건을 줄이거나 다른 키워드로 찾아보세요.
+                    button(type="button", class="mt-4 rounded-md border border-zinc-200 px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100", (click)="resetFilters()") 전체 레시피 보기
+
+                div(*ngIf="!loading && items.length > 0", class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3")
+                    article(*ngFor="let item of items; let index = index", class="overflow-hidden rounded-md border border-zinc-200 bg-white transition-shadow hover:shadow-md")
+                        button(type="button", class="block w-full text-left", (click)="openDish(item)")
+                            div(class="relative h-40 bg-cover bg-center", [style.backgroundImage]="imageStyle(item, index)")
+                                div(*ngIf="!item.hasImage", class="absolute left-2 top-2 rounded bg-white/90 px-2 py-1 text-xs font-medium text-zinc-600") 이미지 없음
+                            div(class="space-y-2 p-4")
+                                div(class="flex items-center justify-between gap-2")
+                                    span(class="truncate text-xs font-medium text-emerald-700") {{ item.category || '레시피' }}
+                                    span(class="shrink-0 text-xs text-zinc-500") 조회 {{ item.viewCount || 0 }}
+                                h2(class="line-clamp-2 text-[15px] font-semibold text-zinc-950") {{ item.name }}
+                                p(class="line-clamp-2 min-h-[40px] text-[13px] leading-5 text-zinc-600") {{ item.description || '레시피 설명이 준비 중입니다.' }}
+                                div(class="flex min-h-[24px] flex-wrap gap-1.5")
+                                    span(*ngFor="let tag of item.tags?.slice(0, 3)", class="rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-600") {{ tag }}
+                                div(*ngIf="isLowSodiumPreset()", class="border-t border-zinc-100 pt-3")
+                                    div(class="mb-2 flex flex-wrap items-center gap-2")
+                                        span(class="rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700") 저염 포인트
+                                        span(*ngIf="lowSodiumPreview(item).aiModified", class="rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700") AI 저염 개량
+                                        span(*ngIf="!lowSodiumPreview(item).aiModified", class="rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600") 저염 원본
+                                    div(class="space-y-1.5")
+                                        p(*ngFor="let point of lowSodiumPreview(item).sodiumPoints", class="line-clamp-1 text-xs text-zinc-600") {{ point }}
+                                    div(*ngIf="lowSodiumPreview(item).sodiumIngredients.length > 0", class="mt-2 flex flex-wrap gap-1.5")
+                                        span(*ngFor="let ingredient of lowSodiumPreview(item).sodiumIngredients", class="rounded bg-amber-50 px-2 py-1 text-xs text-amber-700") {{ ingredient }}
+                                    p(*ngIf="lowSodiumPreview(item).flavorTips.length > 0", class="mt-2 line-clamp-2 text-xs leading-5 text-zinc-500") {{ lowSodiumPreview(item).flavorTips[0] }}
+                                div(*ngIf="isBabyFoodPreset()", class="border-t border-zinc-100 pt-3")
+                                    div(class="mb-2 flex flex-wrap items-center gap-2")
+                                        span(class="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800") {{ babyPreview(item).stageLabel || '이유식' }}
+                                        span(class="rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600") {{ babyPreview(item).recommendedAge || '월령 확인' }}
+                                        span(*ngIf="babyPreview(item).aiModified", class="rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700") AI 개량
+                                    div(class="grid gap-2 text-xs text-zinc-600")
+                                        p 입자: {{ babyPreview(item).particleSize || '보호자 확인' }}
+                                        p 보관: {{ babyPreview(item).storage || '짧게 보관' }}
+                                        p 냉동: {{ babyPreview(item).freezing || '식감 확인' }}
+                                    div(*ngIf="babyPreview(item).allergens.length > 0", class="mt-2 flex flex-wrap gap-1.5")
+                                        span(*ngFor="let allergen of babyPreview(item).allergens", class="rounded bg-rose-50 px-2 py-1 text-xs text-rose-700") {{ allergen }}
+                                    p(*ngIf="babyPreview(item).warnings.length > 0", class="mt-2 line-clamp-2 text-xs leading-5 text-zinc-500") {{ babyPreview(item).warnings[0] }}
+
+                div(*ngIf="!loading && totalPages > 1", class="mt-6 flex items-center justify-center gap-2")
+                    button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-300", [disabled]="page <= 1", (click)="goPage(page - 1)") 이전
+                    span(class="px-2 text-[13px] text-zinc-500") {{ page }} / {{ totalPages }}
+                    button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-300", [disabled]="page >= totalPages", (click)="goPage(page + 1)") 다음

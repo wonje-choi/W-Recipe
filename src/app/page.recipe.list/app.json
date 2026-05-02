@@ -1,0 +1,11 @@
+{
+    "mode": "page",
+    "id": "page.recipe.list",
+    "title": "/recipes/:preset?",
+    "namespace": "recipe.list",
+    "viewuri": "/recipes/:preset?",
+    "category": "recipe",
+    "controller": "base",
+    "layout": "layout.recipe",
+    "template": "wiz-page-recipe-list()"
+}

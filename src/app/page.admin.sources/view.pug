@@ -1,0 +1,161 @@
+section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
+    div(class="mx-auto flex max-w-7xl flex-col gap-4")
+        header(class="flex flex-col gap-3 border-b border-zinc-200 pb-4 lg:flex-row lg:items-end lg:justify-between")
+            div
+                p(class="text-xs font-medium text-emerald-700") 관리자
+                h1(class="mt-1 text-lg font-semibold text-zinc-950") 외부 자료 관리
+                p(class="mt-1 text-[13px] text-zinc-600") URL, 출처, 수집 상태, 요약 여부와 실패 사유를 추적합니다.
+            div(class="flex flex-wrap items-center gap-2")
+                button(type="button", (click)="newSource()", class="rounded-md bg-emerald-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-700") URL 등록
+                button(type="button", (click)="openBatch()", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-700 hover:bg-emerald-100") 배치 등록
+                button(type="button", (click)="retryFailed()", [disabled]="!retrySummary.retryable || actionLoadingId === 'retry_failed'", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] font-medium text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-40") 실패 재시도 {{ retrySummary.retryable || 0 }}
+                button(type="button", (click)="load()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+
+        div(class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7")
+            button(*ngFor="let item of statusSummary", type="button", (click)="filters.status = item.value; load(1)", [ngClass]="filters.status === item.value ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-zinc-200 bg-white text-zinc-600'", class="rounded-md border px-3 py-3 text-left transition hover:border-emerald-300")
+                p(class="text-xs font-medium") {{ item.label }}
+                p(class="mt-1 text-xl font-semibold") {{ item.count | number }}
+
+        div(class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]")
+            div(class="flex min-w-0 flex-col gap-4")
+                div(class="rounded-lg border border-zinc-200 bg-white p-3")
+                    form(class="grid gap-2 lg:grid-cols-[minmax(180px,1fr)_150px_150px_auto]", (submit)="$event.preventDefault(); search()")
+                        input(type="search", [(ngModel)]="filters.text", name="sourceText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="URL, 제목, 작성자, 실패 사유 검색")
+                        select([(ngModel)]="filters.status", name="sourceStatus", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="") 모든 상태
+                            option(*ngFor="let status of options.crawlStatuses", [value]="status.value") {{ status.label }}
+                        select([(ngModel)]="filters.sourceType", name="sourceType", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(value="") 모든 출처
+                            option(*ngFor="let type of options.sourceTypes", [value]="type.value") {{ type.label }}
+                        div(class="flex gap-2")
+                            button(type="submit", class="min-h-[38px] rounded-md bg-zinc-900 px-3 text-[13px] font-medium text-white hover:bg-zinc-700") 검색
+                            button(type="button", (click)="resetFilters()", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+
+                div(*ngIf="message", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700") {{ message }}
+                div(*ngIf="loading", class="rounded-lg border border-zinc-200 bg-white p-8 text-center text-[13px] text-zinc-500") 출처 목록을 불러오는 중입니다.
+
+                div(*ngIf="!loading", class="overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        p(class="text-[13px] font-medium text-zinc-800") 총 {{ total }}개
+                        p(class="text-xs text-zinc-500") {{ page }} / {{ totalPages }} 페이지
+                    div(class="overflow-x-auto")
+                        table(class="min-w-full divide-y divide-zinc-200 text-left text-[13px]")
+                            thead(class="bg-zinc-50 text-xs font-semibold text-zinc-500")
+                                tr
+                                    th(class="w-[34%] px-4 py-3") URL / 제목
+                                    th(class="px-4 py-3") 출처
+                                    th(class="px-4 py-3") 수집 상태
+                                    th(class="px-4 py-3") 검수 플래그
+                                    th(class="px-4 py-3") 수집 일자
+                                    th(class="px-4 py-3 text-right") 액션
+                            tbody(class="divide-y divide-zinc-100 bg-white")
+                                tr(*ngFor="let item of items", class="align-top hover:bg-zinc-50")
+                                    td(class="px-4 py-3")
+                                        button(type="button", (click)="openSource(item)", class="line-clamp-1 text-left text-[13px] font-semibold text-zinc-950 hover:text-emerald-700") {{ item.title || item.hostname || item.id }}
+                                        p(class="mt-1 line-clamp-1 text-xs text-zinc-500") {{ item.sourceUrl }}
+                                        p(class="mt-1 text-xs text-zinc-400") {{ item.author || '작성자 없음' }}
+                                        p(*ngIf="item.errorMessage", class="mt-2 line-clamp-2 rounded-md bg-rose-50 px-2 py-1 text-xs text-rose-700") {{ item.errorMessage }}
+                                    td(class="px-4 py-3")
+                                        span(class="rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-600") {{ item.sourceTypeLabel }}
+                                    td(class="px-4 py-3")
+                                        span([ngClass]="statusClass(item.crawlStatus)", class="inline-flex rounded border px-2 py-1 text-xs font-medium") {{ item.crawlStatusLabel }}
+                                        p(class="mt-2 text-xs text-zinc-500") 재시도 {{ item.retryCount || 0 }}회
+                                    td(class="px-4 py-3")
+                                        div(class="flex max-w-[280px] flex-wrap gap-1.5")
+                                            span(*ngFor="let flag of item.flags", [ngClass]="flagClass(flag)", class="rounded border px-2 py-1 text-[11px] font-medium") {{ flag.label }}
+                                    td(class="px-4 py-3 text-xs text-zinc-500")
+                                        p {{ item.collectedAt || '-' }}
+                                        p(class="mt-1") 생성 {{ item.createdAt || '-' }}
+                                    td(class="px-4 py-3")
+                                        div(class="flex justify-end gap-2")
+                                            button(type="button", (click)="openOriginal(item)", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 원본
+                                            button(type="button", (click)="retrySource(item)", [disabled]="actionLoadingId === item.id", class="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:cursor-wait disabled:opacity-50") 재시도
+                                            button(type="button", (click)="openSource(item)", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 편집
+                                tr(*ngIf="items.length === 0")
+                                    td(colspan="6", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 외부 자료가 없습니다.
+                    div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="prevPage()", [disabled]="page <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                        button(type="button", (click)="nextPage()", [disabled]="page >= totalPages", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음
+
+            aside(class="min-w-0")
+                div(*ngIf="!formOpen && !batchOpen", class="rounded-lg border border-zinc-200 bg-white p-5 text-[13px] text-zinc-600")
+                    p(class="font-medium text-zinc-900") 출처를 선택하세요.
+                    p(class="mt-2") 목록에서 편집 버튼을 누르거나 새 URL을 등록할 수 있습니다.
+                    div(class="mt-4 grid grid-cols-2 gap-2")
+                        div(class="rounded-md bg-rose-50 p-3 text-rose-700")
+                            p(class="text-xs font-medium") 실패
+                            p(class="mt-1 text-lg font-semibold") {{ retrySummary.failed || 0 }}
+                        div(class="rounded-md bg-amber-50 p-3 text-amber-700")
+                            p(class="text-xs font-medium") 재시도 가능
+                            p(class="mt-1 text-lg font-semibold") {{ retrySummary.retryable || 0 }}
+                    div(*ngIf="selectedSource", class="mt-4 rounded-md bg-zinc-50 p-3")
+                        p(class="line-clamp-1 font-semibold text-zinc-950") {{ selectedSource.title || selectedSource.hostname }}
+                        p(class="mt-1 line-clamp-2 text-xs text-zinc-500") {{ selectedSource.collectedTextSummary || selectedSource.sourceUrl }}
+                div(*ngIf="batchOpen", class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        div
+                            p(class="text-[13px] font-semibold text-zinc-950") 배치 URL 등록
+                            p(class="mt-0.5 text-xs text-zinc-500") 줄바꿈, 쉼표, CSV 형식으로 최대 50개까지 등록합니다.
+                        button(type="button", (click)="closeBatch()", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 닫기
+                    div(class="space-y-3 p-4")
+                        textarea([(ngModel)]="batchUrls", name="sourceBatchUrls", rows="10", class="block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] leading-6 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://example.com/recipe-1\nhttps://example.com/recipe-2")
+                        div(*ngIf="batchResult", class="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-[13px] text-zinc-700")
+                            p(*ngIf="batchResult.message", class="text-rose-700") {{ batchResult.message }}
+                            p(*ngIf="!batchResult.message") 등록 {{ batchResult.created || 0 }}개 · 중복 {{ batchResult.duplicates || 0 }}개 · 차단 {{ batchResult.blocked || 0 }}개 · 오류 {{ batchResult.errors || 0 }}개
+                        button(type="button", (click)="batchImport()", [disabled]="batchImporting", class="w-full rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60") {{ batchImporting ? '등록 중' : '일괄 등록' }}
+                div(*ngIf="formOpen", class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        div
+                            p(class="text-[13px] font-semibold text-zinc-950") {{ form.id ? '출처 편집' : 'URL 등록' }}
+                            p(class="mt-0.5 text-xs text-zinc-500") 수집 허용, 요약, 실패 사유와 링크 상태를 관리합니다.
+                        button(type="button", (click)="closeForm()", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 닫기
+
+                    div(class="flex max-h-[calc(100vh-180px)] flex-col gap-5 overflow-auto p-4")
+                        div(*ngIf="formMessage", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800") {{ formMessage }}
+
+                        section(class="space-y-3")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 기본 정보
+                            label(class="block text-xs font-medium text-zinc-600") 원본 URL
+                                input(type="url", [(ngModel)]="form.sourceUrl", name="sourceFormUrl", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://")
+                            div(class="grid gap-3 sm:grid-cols-2")
+                                label(class="block text-xs font-medium text-zinc-600") 출처 유형
+                                    select([(ngModel)]="form.sourceType", name="sourceFormType", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                        option(*ngFor="let type of options.sourceTypes", [value]="type.value") {{ type.label }}
+                                label(class="block text-xs font-medium text-zinc-600") 수집 상태
+                                    select([(ngModel)]="form.crawlStatus", name="sourceFormStatus", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                        option(*ngFor="let status of options.crawlStatuses", [value]="status.value") {{ status.label }}
+                            label(class="block text-xs font-medium text-zinc-600") 원본 제목
+                                input(type="text", [(ngModel)]="form.title", name="sourceFormTitle", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="block text-xs font-medium text-zinc-600") 작성자
+                                input(type="text", [(ngModel)]="form.author", name="sourceFormAuthor", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="block text-xs font-medium text-zinc-600") 썸네일 URL
+                                input(type="url", [(ngModel)]="form.thumbnailUrl", name="sourceFormThumbnail", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://")
+
+                        section(class="space-y-3 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 처리 상태
+                            label(class="flex items-center justify-between rounded-md border border-zinc-200 px-3 py-2 text-[13px] text-zinc-700")
+                                span 수집 허용
+                                input(type="checkbox", [(ngModel)]="form.robotsAllowed", name="sourceFormRobots", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600")
+                            label(class="block text-xs font-medium text-zinc-600") 요약 내용
+                                textarea([(ngModel)]="form.collectedTextSummary", name="sourceFormSummary", rows="5", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="block text-xs font-medium text-zinc-600") 출처 원문
+                                textarea([(ngModel)]="form.rawContent", name="sourceFormRawContent", rows="8", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] leading-6 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="저작권 정책상 보관이 허용된 원문만 입력하세요.")
+                                span(class="mt-1 block text-[11px] font-normal text-zinc-500") 원문을 입력하면 상세 페이지에서 접기/펼치기 형태로 공개됩니다.
+                            label(class="block text-xs font-medium text-zinc-600") 실패 사유
+                                textarea([(ngModel)]="form.errorMessage", name="sourceFormError", rows="3", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+
+                        section(*ngIf="selectedSource", class="space-y-3 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 상태 요약
+                            div(class="flex flex-wrap gap-1.5")
+                                span(*ngFor="let flag of selectedSource.flags", [ngClass]="flagClass(flag)", class="rounded border px-2 py-1 text-[11px] font-medium") {{ flag.label }}
+                            div(class="grid gap-2 sm:grid-cols-2")
+                                button(type="button", (click)="updateStatus('allowed')", [disabled]="actionLoadingId === form.id", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 disabled:cursor-wait disabled:opacity-50") 허용 처리
+                                button(type="button", (click)="updateStatus('failed')", [disabled]="actionLoadingId === form.id", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 disabled:cursor-wait disabled:opacity-50") 실패 처리
+                                button(type="button", (click)="retrySource()", [disabled]="actionLoadingId === form.id", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 disabled:cursor-wait disabled:opacity-50") 재시도
+                                button(type="button", (click)="expireSource()", [disabled]="actionLoadingId === form.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-wait disabled:opacity-50") 만료 처리
+
+                    div(class="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="openOriginal()", [disabled]="!form.sourceUrl", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 원본 열기
+                        div(class="flex gap-2")
+                            button(type="button", (click)="submitStatus()", [disabled]="!form.id || actionLoadingId === form.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 상태 저장
+                            button(type="button", (click)="save()", [disabled]="saving", class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60") {{ saving ? '저장 중' : '저장' }}

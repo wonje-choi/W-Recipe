@@ -4,8 +4,8 @@
     "title": "/mypage",
     "namespace": "mypage",
     "viewuri": "/mypage",
-    "category": "",
+    "category": "recipe",
     "controller": "user",
-    "layout": "layout.sidebar",
+    "layout": "layout.recipe",
     "template": "wiz-page-mypage()"
 }

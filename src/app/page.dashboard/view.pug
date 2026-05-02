@@ -1,79 +1,138 @@
-nav(class="sticky top-0 z-20 bg-white shadow")
-    div(class="max-w-6xl px-2 sm:px-4 lg:px-8 py-3 lg:px-6")
-        div(class="flex items-center justify-between")
-            div(class="min-w-0 flex-1")
-                h1(class="flex text-lg font-semibold text-zinc-950 gap-x-3 items-center")
-                    svg(xmlns="http://www.w3.org/2000/svg", fill="none", viewBox="0 0 24 24", stroke-width="1.5", stroke="currentColor", class="size-6")
-                        path(stroke-linecap="round", stroke-linejoin="round", d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6")
-                    span Dashboard
-
-div(class="max-w-6xl pt-6 px-8 pb-8")
-    //- Stats Cards
-    div(class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8")
-        div(*ngFor="let stat of stats", class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow")
-            div(class="flex items-center justify-between")
+main(class="min-h-full bg-zinc-50")
+    section(class="border-b border-zinc-200 bg-white")
+        div(class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8")
+            div(class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between")
                 div
-                    p(class="text-xs font-medium text-gray-500 uppercase tracking-wider") {{stat.label}}
-                    p(class="mt-2 text-2xl font-bold text-gray-900") {{stat.value}}
-                    p(class="mt-1 text-xs", [ngClass]="stat.change >= 0 ? 'text-green-600' : 'text-red-600'")
-                        span(*ngIf="stat.change >= 0") ↑ +{{stat.change}}%
-                        span(*ngIf="stat.change < 0") ↓ {{stat.change}}%
-                        span(class="text-gray-400 ml-1") vs last month
-                div(class="flex items-center justify-center w-12 h-12 rounded-lg", [ngClass]="stat.bgColor || 'bg-indigo-50'")
-                    span(class="text-xl") {{stat.icon}}
+                    h1(class="text-2xl font-semibold tracking-normal text-zinc-950") 관리자 Dashboard
+                    p(class="mt-2 text-[13px] leading-6 text-zinc-500") 레시피 검수, 사용자 참여, AI 처리 상태를 한눈에 확인합니다.
+                button(type="button", class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 hover:border-emerald-500 hover:text-emerald-700", (click)="load()") 새로고침
 
-    div(class="grid grid-cols-1 lg:grid-cols-3 gap-6")
-        //- Recent Activity
-        div(class="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden")
-            div(class="px-6 py-4 border-b border-gray-100 flex items-center justify-between")
-                h2(class="text-[15px] font-semibold text-gray-900") 최근 활동
-                a(routerLink="/posts", class="text-xs text-indigo-600 hover:text-indigo-500 font-medium") 전체 보기 →
+    section(class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8")
+        div(*ngIf="loading", class="rounded-md bg-white p-6 text-[13px] text-zinc-500") 운영 지표를 불러오는 중입니다.
+        p(*ngIf="message", class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700") {{ message }}
+        div(*ngIf="!loading", class="space-y-6")
+            div(class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6")
+                button(*ngFor="let metric of metrics", type="button", class="rounded-md border bg-white p-4 text-left transition hover:shadow-sm", [ngClass]="toneClass(metric.tone)", (click)="go(metric.href)")
+                    p(class="text-xs font-medium") {{ metric.label }}
+                    p(class="mt-2 text-2xl font-semibold") {{ metric.value | number }}
 
-            div(class="divide-y divide-gray-100")
-                ng-container(*ngIf="loading")
-                    div(class="px-6 py-8 text-center text-[13px] text-gray-400") 로딩 중...
-
-                ng-container(*ngIf="!loading")
-                    div(*ngIf="recentItems.length === 0", class="px-6 py-8 text-center text-[13px] text-gray-400") 최근 활동이 없습니다.
-
-                    div(*ngFor="let item of recentItems", class="px-6 py-3 hover:bg-gray-50 transition-colors cursor-pointer", routerLink="/posts/{{item.id}}/view")
-                        div(class="flex items-center gap-3")
-                            div(class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold", [ngClass]="item.avatarColor || 'bg-indigo-100 text-indigo-700'")
-                                | {{item.author?.charAt(0) || '?'}}
-                            div(class="min-w-0 flex-1")
-                                p(class="text-[13px] font-medium text-gray-900 truncate") {{item.title}}
-                                p(class="text-[11px] text-gray-400 mt-0.5") {{item.author}} · {{item.date}}
-                            span(class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-                                [ngClass]="{'bg-green-50 text-green-700 border border-green-200': item.status === 'published', 'bg-yellow-50 text-yellow-700 border border-yellow-200': item.status === 'draft', 'bg-gray-50 text-gray-600 border border-gray-200': item.status !== 'published' && item.status !== 'draft'}")
-                                | {{item.status}}
-
-        //- Quick Links / Summary
-        div(class="bg-white rounded-xl border border-gray-200 overflow-hidden")
-            div(class="px-6 py-4 border-b border-gray-100")
-                h2(class="text-[15px] font-semibold text-gray-900") 바로가기
-
-            div(class="p-4 space-y-2")
-                a(routerLink="/posts", class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group")
-                    div(class="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors")
-                        svg(xmlns="http://www.w3.org/2000/svg", fill="none", viewBox="0 0 24 24", stroke-width="1.5", stroke="currentColor", class="size-4")
-                            path(stroke-linecap="round", stroke-linejoin="round", d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z")
+            section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                div(class="flex flex-wrap items-start justify-between gap-3")
                     div
-                        p(class="text-[13px] font-medium text-gray-900") 게시물 관리
-                        p(class="text-[11px] text-gray-400") 게시물 목록 및 작성
+                        h2(class="text-lg font-semibold text-zinc-950") 오늘의 운영 신호
+                        p(class="mt-1 text-xs text-zinc-500") {{ operations.measurementNote }}
+                    span(class="rounded-md bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600") Today
+                div(class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6")
+                    div(class="rounded-md bg-sky-50 p-3")
+                        p(class="text-xs text-sky-700") 방문자
+                        p(class="mt-1 text-xl font-semibold text-sky-950") {{ operations.daily.visitors | number }}
+                    div(class="rounded-md bg-emerald-50 p-3")
+                        p(class="text-xs text-emerald-700") 레시피 조회
+                        p(class="mt-1 text-xl font-semibold text-emerald-950") {{ operations.daily.recipeViews | number }}
+                    div(class="rounded-md bg-indigo-50 p-3")
+                        p(class="text-xs text-indigo-700") AI 요청
+                        p(class="mt-1 text-xl font-semibold text-indigo-950") {{ operations.daily.aiRequests | number }}
+                    div(class="rounded-md bg-zinc-50 p-3")
+                        p(class="text-xs text-zinc-600") 가입
+                        p(class="mt-1 text-xl font-semibold text-zinc-950") {{ operations.daily.signups | number }}
+                    div(class="rounded-md bg-violet-50 p-3")
+                        p(class="text-xs text-violet-700") 댓글
+                        p(class="mt-1 text-xl font-semibold text-violet-950") {{ operations.daily.comments | number }}
+                    div(class="rounded-md bg-rose-50 p-3")
+                        p(class="text-xs text-rose-700") 신고
+                        p(class="mt-1 text-xl font-semibold text-rose-950") {{ operations.daily.reports | number }}
 
-                a(routerLink="/members", class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group")
-                    div(class="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-100 transition-colors")
-                        svg(xmlns="http://www.w3.org/2000/svg", fill="none", viewBox="0 0 24 24", stroke-width="1.5", stroke="currentColor", class="size-4")
-                            path(stroke-linecap="round", stroke-linejoin="round", d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z")
-                    div
-                        p(class="text-[13px] font-medium text-gray-900") 멤버 관리
-                        p(class="text-[11px] text-gray-400") 팀 멤버 초대 및 권한
+            div(class="grid gap-6 lg:grid-cols-[1fr_1fr]")
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    div(class="flex items-center justify-between gap-3")
+                        h2(class="text-lg font-semibold text-zinc-950") 검수 대기
+                        button(type="button", class="rounded-md bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-white hover:bg-zinc-800", (click)="go('/admin/recipes?status=pending_review')") 검수로 이동
+                    div(class="mt-4 space-y-3")
+                        button(*ngFor="let item of reviewQueue", type="button", class="flex w-full items-center justify-between rounded-md border border-zinc-200 px-4 py-3 text-left hover:border-amber-400", (click)="go(item.href)")
+                            span(class="text-[13px] font-medium text-zinc-700") {{ item.label }}
+                            span(class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700") {{ item.count | number }}
 
-                a(routerLink="/mypage", class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group")
-                    div(class="flex items-center justify-center w-9 h-9 rounded-lg bg-orange-50 text-orange-600 group-hover:bg-orange-100 transition-colors")
-                        svg(xmlns="http://www.w3.org/2000/svg", fill="none", viewBox="0 0 24 24", stroke-width="1.5", stroke="currentColor", class="size-4")
-                            path(stroke-linecap="round", stroke-linejoin="round", d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z")
-                            path(stroke-linecap="round", stroke-linejoin="round", d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z")
-                    div
-                        p(class="text-[13px] font-medium text-gray-900") 내 프로필
-                        p(class="text-[11px] text-gray-400") 계정 정보 및 비밀번호
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    h2(class="text-lg font-semibold text-zinc-950") 처리 품질
+                    div(class="mt-4 grid gap-3 sm:grid-cols-2")
+                        div(class="rounded-md bg-zinc-50 p-4")
+                            p(class="text-xs text-zinc-500") AI 실패율
+                            p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ operations.aiFailureRate }}%
+                            p(class="mt-1 text-xs text-zinc-500") 실패 {{ operations.aiFailed | number }}건 · 전체 {{ operations.aiRequests | number }}건
+                        div(class="rounded-md bg-zinc-50 p-4")
+                            p(class="text-xs text-zinc-500") 승인 비율
+                            p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ operations.approvalRate }}%
+                            p(class="mt-1 text-xs text-zinc-500") 승인 {{ operations.approved | number }} · 반려 {{ operations.rejected | number }}
+                        div(class="rounded-md bg-zinc-50 p-4")
+                            p(class="text-xs text-zinc-500") 크롤링 실패율
+                            p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ operations.sourceFailureRate }}%
+                            p(class="mt-1 text-xs text-zinc-500") 실패 {{ operations.sourceErrors | number }} · 전체 {{ operations.sourceCount | number }}
+                        div(class="rounded-md bg-zinc-50 p-4")
+                            p(class="text-xs text-zinc-500") AI 사용량
+                            p(class="mt-1 text-2xl font-semibold text-zinc-950") {{ operations.tokenTotal | number }}
+                            p(class="mt-1 text-xs text-zinc-500") 비용 {{ operations.costTotal | number:'1.4-4' }}
+
+            div(class="grid gap-6 lg:grid-cols-[1fr_1fr]")
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    h2(class="text-lg font-semibold text-zinc-950") 레시피 조회 지표
+                    div(class="mt-4 grid gap-3 sm:grid-cols-3")
+                        div(class="rounded-md bg-zinc-50 p-3")
+                            p(class="text-xs text-zinc-500") 전체 조회
+                            p(class="mt-1 text-xl font-semibold text-zinc-950") {{ operations.totalRecipeViews | number }}
+                        div(class="rounded-md bg-sky-50 p-3")
+                            p(class="text-xs text-sky-700") 저염식 조회
+                            p(class="mt-1 text-xl font-semibold text-sky-950") {{ operations.lowSodiumViews | number }}
+                        div(class="rounded-md bg-amber-50 p-3")
+                            p(class="text-xs text-amber-700") 이유식 조회
+                            p(class="mt-1 text-xl font-semibold text-amber-950") {{ operations.babyFoodViews | number }}
+                    div(class="mt-4 space-y-2")
+                        button(*ngFor="let item of operations.popularRecipes", type="button", class="flex w-full items-center justify-between rounded-md border border-zinc-200 px-3 py-2 text-left hover:border-emerald-300", (click)="go(item.href)")
+                            div(class="min-w-0")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.name }}
+                                p(class="mt-0.5 text-xs text-zinc-500") {{ item.category || '일반' }}
+                            span(class="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600") {{ item.viewCount | number }}
+                    div(*ngIf="operations.popularRecipes.length === 0", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 인기 레시피 데이터가 없습니다.
+
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    h2(class="text-lg font-semibold text-zinc-950") 사용자 참여
+                    div(class="mt-4 grid gap-3 sm:grid-cols-3")
+                        div(class="rounded-md bg-zinc-50 p-3")
+                            p(class="text-xs text-zinc-500") 가입 사용자
+                            p(class="mt-1 text-xl font-semibold text-zinc-950") {{ operations.signups | number }}
+                            p(class="mt-1 text-xs text-zinc-500") 오늘 {{ operations.todaySignups | number }}
+                        div(class="rounded-md bg-zinc-50 p-3")
+                            p(class="text-xs text-zinc-500") 댓글
+                            p(class="mt-1 text-xl font-semibold text-zinc-950") {{ operations.comments | number }}
+                            p(class="mt-1 text-xs text-zinc-500") 오늘 {{ operations.todayComments | number }}
+                        div(class="rounded-md bg-zinc-50 p-3")
+                            p(class="text-xs text-zinc-500") 신고
+                            p(class="mt-1 text-xl font-semibold text-zinc-950") {{ operations.reports | number }}
+                            p(class="mt-1 text-xs text-zinc-500") 오늘 {{ operations.todayReports | number }}
+                    div(class="mt-4 flex flex-wrap gap-2")
+                        button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700", (click)="go('/admin/feedback')") 참여 관리
+                        button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700", (click)="go('/admin/logs')") 로그 보기
+                        button(type="button", class="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700", (click)="go('/admin/ai')") AI 관리
+
+            div(class="grid gap-6 lg:grid-cols-2")
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    div(class="flex items-center justify-between gap-3")
+                        h2(class="text-lg font-semibold text-zinc-950") 최근 수집 외부 자료
+                        button(type="button", class="text-[13px] font-semibold text-emerald-700", (click)="go('/admin/sources')") 전체 보기
+                    div(*ngIf="operations.recentSources.length === 0", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 최근 수집 자료가 없습니다.
+                    div(class="mt-4 space-y-2")
+                        article(*ngFor="let item of operations.recentSources", class="rounded-md border border-zinc-200 p-3")
+                            div(class="flex items-center justify-between gap-3")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.title || item.id }}
+                                span(class="rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600") {{ item.status || '-' }}
+                            p(class="mt-1 text-xs text-zinc-500") {{ item.createdAt }}
+                section(class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                    div(class="flex items-center justify-between gap-3")
+                        h2(class="text-lg font-semibold text-zinc-950") AI 실패 로그
+                        button(type="button", class="text-[13px] font-semibold text-emerald-700", (click)="go('/admin/ai?tab=logs&status=failed')") 로그 보기
+                    div(*ngIf="operations.failedLogs.length === 0", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 실패 로그가 없습니다.
+                    div(class="mt-4 space-y-2")
+                        article(*ngFor="let item of operations.failedLogs", class="rounded-md border border-zinc-200 p-3")
+                            div(class="flex items-center justify-between gap-3")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.title || item.id }}
+                                span(class="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700") 실패
+                            p(class="mt-1 line-clamp-2 text-xs text-zinc-500") {{ item.errorMessage || '오류 메시지 없음' }}

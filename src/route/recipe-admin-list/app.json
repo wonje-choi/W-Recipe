@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-list",
+    "title": "/api/admin/recipes",
+    "route": "/api/admin/recipes",
+    "category": "recipe-admin",
+    "viewuri": "",
+    "controller": "admin"
+}

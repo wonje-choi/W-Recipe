@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-ai-summary",
+    "title": "/api/admin/ai/recipe-summary",
+    "route": "/api/admin/ai/recipe-summary",
+    "category": "recipe-admin",
+    "viewuri": "",
+    "controller": "admin"
+}

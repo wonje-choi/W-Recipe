@@ -2,94 +2,157 @@ import { OnInit } from '@angular/core';
 import { Service } from '@wiz/libs/portal/season/service';
 
 export class Component implements OnInit {
-    public user: any = null;
-    public saving: boolean = false;
-
-    public passwordForm: any = {
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-    };
-    public changingPassword: boolean = false;
-
     constructor(public service: Service) { }
+
+    public loading: boolean = true;
+    public savingProfile: boolean = false;
+    public savingPreference: boolean = false;
+    public message: string = '';
+    public activeTab: string = 'activity';
+    public profile: any = null;
+    public preference: any = {};
+    public activity: any = {
+        favorites: { items: [], total: 0 },
+        recentViews: { items: [], total: 0 },
+        comments: { items: [], total: 0 },
+        editRequests: { items: [], total: 0 },
+        aiModifications: { items: [], total: 0 },
+    };
+    public options: any = {
+        dietTypes: [],
+        tools: [],
+        sodiumPreferences: [],
+        texturePreferences: [],
+    };
+    public preferenceText: any = {
+        allergies: '',
+        dislikedIngredients: '',
+    };
+
+    public tabs: any[] = [
+        { label: '활동', value: 'activity' },
+        { label: '개인화 설정', value: 'preference' },
+        { label: '프로필', value: 'profile' },
+    ];
 
     public async ngOnInit() {
         await this.service.init();
-        await this.service.auth.allow("/access");
         await this.load();
     }
 
     public async load() {
-        const { code, data } = await wiz.call("get");
+        this.loading = true;
+        await this.service.render();
+        let { code, data } = await wiz.call('load', {});
+        this.loading = false;
         if (code === 200) {
-            this.user = data;
+            this.profile = data.profile;
+            this.preference = data.preference || {};
+            this.activity = data.activity || this.activity;
+            this.options = data.options || this.options;
+            this.syncPreferenceText();
+        } else {
+            this.message = data.message || '마이페이지를 불러오지 못했습니다.';
         }
         await this.service.render();
     }
 
-    public async updateProfile() {
-        if (!this.user.name) {
-            await this.service.modal.error("이름을 입력해주세요.");
-            return;
-        }
+    public syncPreferenceText() {
+        this.preferenceText.allergies = (this.preference.allergies || []).join(', ');
+        this.preferenceText.dislikedIngredients = (this.preference.dislikedIngredients || []).join(', ');
+    }
 
-        this.saving = true;
+    public toList(text: string) {
+        return (text || '').split(',').map((item) => item.trim()).filter((item) => !!item);
+    }
+
+    public async selectTab(tab: string) {
+        this.activeTab = tab;
+        this.message = '';
         await this.service.render();
+    }
 
-        const { code, data } = await wiz.call("update_profile", {
-            name: this.user.name,
-            mobile: this.user.mobile || ''
-        });
-
-        await this.service.sleep(500);
-        this.saving = false;
-
-        if (code === 200) {
-            await this.service.modal.success("프로필이 업데이트되었습니다.");
+    public toggleArray(field: string, value: string) {
+        let current = this.preference[field] || [];
+        if (current.indexOf(value) >= 0) {
+            this.preference[field] = current.filter((item: string) => item !== value);
         } else {
-            await this.service.modal.error(data || "업데이트에 실패했습니다.");
+            this.preference[field] = current.concat([value]);
+        }
+    }
+
+    public selected(field: string, value: string) {
+        return (this.preference[field] || []).indexOf(value) >= 0;
+    }
+
+    public async saveProfile() {
+        if (!this.profile || this.savingProfile) return;
+        this.savingProfile = true;
+        this.message = '';
+        await this.service.render();
+        let { code, data } = await wiz.call('save_profile', { nickname: this.profile.nickname });
+        this.savingProfile = false;
+        if (code === 200) {
+            this.profile = data.profile;
+            this.message = '프로필이 저장되었습니다.';
+        } else {
+            this.message = data.message || '프로필 저장에 실패했습니다.';
         }
         await this.service.render();
     }
 
-    public async changePassword() {
-        const { current_password, new_password, confirm_password } = this.passwordForm;
-
-        if (!current_password) {
-            await this.service.modal.error("현재 비밀번호를 입력해주세요.");
-            return;
-        }
-        if (!new_password) {
-            await this.service.modal.error("새 비밀번호를 입력해주세요.");
-            return;
-        }
-        if (new_password.length < 8) {
-            await this.service.modal.error("새 비밀번호는 8자 이상이어야 합니다.");
-            return;
-        }
-        if (new_password !== confirm_password) {
-            await this.service.modal.error("새 비밀번호가 일치하지 않습니다.");
-            return;
-        }
-
-        this.changingPassword = true;
-        await this.service.render();
-
-        const { code, data } = await wiz.call("change_password", {
-            current_password: current_password,
-            new_password: new_password
+    public async savePreference() {
+        if (this.savingPreference) return;
+        this.savingPreference = true;
+        this.message = '';
+        let payload = Object.assign({}, this.preference, {
+            allergies: this.toList(this.preferenceText.allergies),
+            dislikedIngredients: this.toList(this.preferenceText.dislikedIngredients),
         });
-
-        await this.service.sleep(500);
-        this.changingPassword = false;
-
+        await this.service.render();
+        let { code, data } = await wiz.call('save_preference', payload);
+        this.savingPreference = false;
         if (code === 200) {
-            await this.service.modal.success("비밀번호가 변경되었습니다.");
-            this.passwordForm = { current_password: '', new_password: '', confirm_password: '' };
+            this.preference = data.preference;
+            this.syncPreferenceText();
+            this.message = '개인화 설정이 저장되었습니다.';
         } else {
-            await this.service.modal.error(data || "비밀번호 변경에 실패했습니다.");
+            this.message = data.message || '개인화 설정 저장에 실패했습니다.';
         }
         await this.service.render();
+    }
+
+    public openVersion(item: any) {
+        let version = item && item.version;
+        if (!version || !version.dishId) return;
+        location.href = `/recipes/detail/${version.dishId}?version=${encodeURIComponent(version.id)}`;
+    }
+
+    public countOf(key: string) {
+        return this.activity && this.activity[key] ? this.activity[key].total || 0 : 0;
+    }
+
+    public statusLabel(status: string) {
+        let labels: any = {
+            pending_review: '검수 대기',
+            approved: '승인',
+            rejected: '반려',
+            open: '접수',
+            in_review: '검토 중',
+            resolved: '해결',
+            visible: '표시 중',
+            deleted: '삭제됨',
+        };
+        return labels[status] || status || '-';
+    }
+
+    public subscriptionLabel() {
+        if (!this.profile) return 'Free';
+        return this.profile.subscriptionPlan === 'premium' ? 'Premium' : 'Free';
+    }
+
+    public subscriptionExpiresAt() {
+        if (!this.profile || !this.profile.subscriptionExpiresAt) return '기간 제한 없음';
+        return this.profile.subscriptionExpiresAt;
     }
 }

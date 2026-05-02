@@ -1,0 +1,11 @@
+{
+    "mode": "page",
+    "id": "page.recipe.detail",
+    "title": "/recipes/detail/:dishId",
+    "namespace": "recipe.detail",
+    "viewuri": "/recipes/detail/:dishId",
+    "category": "recipe",
+    "controller": "base",
+    "layout": "layout.recipe",
+    "template": "wiz-page-recipe-detail()"
+}

@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-report-list",
+    "title": "/api/admin/reports",
+    "route": "/api/admin/reports",
+    "category": "recipe-feedback",
+    "viewuri": "",
+    "controller": "admin"
+}

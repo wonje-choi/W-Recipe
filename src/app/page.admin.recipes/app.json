@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.recipes",
+    "mode": "page",
+    "title": "/admin/recipes",
+    "namespace": "admin.recipes",
+    "category": "recipe-admin",
+    "viewuri": "/admin/recipes",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-recipes()"
+}

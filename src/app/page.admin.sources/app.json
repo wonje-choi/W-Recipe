@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.sources",
+    "mode": "page",
+    "title": "/admin/sources",
+    "namespace": "admin.sources",
+    "category": "recipe-admin",
+    "viewuri": "/admin/sources",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-sources()"
+}

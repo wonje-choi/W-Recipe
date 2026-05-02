@@ -1,0 +1,88 @@
+section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
+    div(class="mx-auto flex max-w-7xl flex-col gap-4")
+        header(class="flex flex-col gap-3 border-b border-zinc-200 pb-4 lg:flex-row lg:items-end lg:justify-between")
+            div
+                p(class="text-xs font-medium text-emerald-700") 관리자
+                h1(class="mt-1 text-lg font-semibold text-zinc-950") 시스템 로그
+                p(class="mt-1 text-[13px] text-zinc-600") 관리자 작업, 로그인 실패, AI 실패, 크롤링 실패 이벤트를 추적합니다.
+            button(type="button", (click)="load()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+
+        div(class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6")
+            button(*ngFor="let type of options.logTypes", type="button", (click)="quickType(type.value)", [ngClass]="filters.type === type.value ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : typeClass(type.value)", class="rounded-md border p-3 text-left transition hover:border-emerald-300")
+                p(class="text-xs font-medium") {{ type.label }}
+                p(class="mt-1 text-xl font-semibold") {{ summaryCount(type.value) | number }}
+
+        div(class="rounded-lg border border-zinc-200 bg-white p-3")
+            form(class="grid gap-2 xl:grid-cols-[150px_130px_140px_140px_140px_140px_minmax(180px,1fr)_auto]", (submit)="$event.preventDefault(); search()")
+                select([(ngModel)]="filters.type", name="logType", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 유형
+                    option(*ngFor="let type of options.logTypes", [value]="type.value") {{ type.label }}
+                select([(ngModel)]="filters.severity", name="logSeverity", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 심각도
+                    option(*ngFor="let severity of options.severities", [value]="severity.value") {{ severity.label }}
+                input(type="text", [(ngModel)]="filters.adminUserId", name="adminUserId", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="관리자 ID")
+                input(type="text", [(ngModel)]="filters.targetType", name="targetType", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="대상 유형")
+                input(type="date", [(ngModel)]="filters.fromDate", name="fromDate", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                input(type="date", [(ngModel)]="filters.toDate", name="toDate", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                input(type="search", [(ngModel)]="filters.text", name="logText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="제목, 메시지, 대상, 마스킹된 메타 검색")
+                div(class="flex gap-2")
+                    button(type="submit", class="min-h-[38px] rounded-md bg-zinc-900 px-3 text-[13px] font-medium text-white hover:bg-zinc-700") 검색
+                    button(type="button", (click)="resetFilters()", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+
+        p(*ngIf="message", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700") {{ message }}
+
+        div(class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]")
+            div(class="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                    p(class="text-[13px] font-medium text-zinc-800") 총 {{ total | number }}개
+                    p(class="text-xs text-zinc-500") {{ page }} / {{ totalPages }} 페이지
+                div(*ngIf="loading", class="p-8 text-center text-[13px] text-zinc-500") 로그를 불러오는 중입니다.
+                div(*ngIf="!loading", class="divide-y divide-zinc-100")
+                    button(*ngFor="let item of items", type="button", (click)="selectItem(item)", class="block w-full px-4 py-3 text-left hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selected.type === item.type ? 'bg-emerald-50' : ''")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                div(class="flex flex-wrap items-center gap-1.5")
+                                    span([ngClass]="typeClass(item.type)", class="rounded border px-2 py-1 text-xs font-medium") {{ item.typeLabel }}
+                                    span([ngClass]="severityClass(item.severity)", class="rounded border px-2 py-1 text-xs font-medium") {{ item.severityLabel }}
+                                p(class="mt-2 line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.title }}
+                                p(class="mt-1 line-clamp-2 text-xs text-zinc-500") {{ item.message || '-' }}
+                            p(class="shrink-0 text-xs text-zinc-400") {{ item.occurredAt || '-' }}
+                        p(class="mt-2 text-xs text-zinc-500") {{ item.targetType || '-' }} · {{ item.targetId || '-' }}
+                    div(*ngIf="items.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 로그가 없습니다.
+                div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                    button(type="button", (click)="prevPage()", [disabled]="page <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                    button(type="button", (click)="nextPage()", [disabled]="page >= totalPages", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음
+
+            aside(class="min-w-0")
+                div(*ngIf="!selected", class="rounded-lg border border-zinc-200 bg-white p-5 text-[13px] text-zinc-600")
+                    p(class="font-medium text-zinc-900") 선택된 로그가 없습니다.
+                    p(class="mt-2") 목록에서 로그를 선택하면 마스킹된 상세 정보가 표시됩니다.
+                div(*ngIf="selected", class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="border-b border-zinc-200 px-4 py-3")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="text-[13px] font-semibold text-zinc-950") {{ selected.title }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ selected.occurredAt || '-' }}
+                            span([ngClass]="severityClass(selected.severity)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ selected.severityLabel }}
+                    div(class="flex max-h-[calc(100vh-180px)] flex-col gap-4 overflow-auto p-4")
+                        section(class="space-y-2")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 요약
+                            p(class="whitespace-pre-wrap rounded-md bg-zinc-50 p-3 text-[13px] leading-6 text-zinc-700") {{ selected.message || '-' }}
+                        section(class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 주체와 대상
+                            div(class="grid gap-2 text-[13px] text-zinc-700")
+                                p
+                                    span(class="text-zinc-500") 주체: 
+                                    span {{ selected.actor?.nickname || selected.actor?.email || selected.actor?.id || '-' }}
+                                p
+                                    span(class="text-zinc-500") 대상: 
+                                    span {{ selected.targetType || '-' }} / {{ selected.targetId || '-' }}
+                                p
+                                    span(class="text-zinc-500") IP: 
+                                    span {{ selected.ipAddress || '-' }}
+                                p
+                                    span(class="text-zinc-500") User-Agent: 
+                                    span {{ selected.userAgent || '-' }}
+                        section(class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 마스킹된 메타
+                            pre(class="max-h-[360px] overflow-auto rounded-md bg-zinc-950 p-3 text-xs leading-5 text-zinc-100") {{ selected.metaText || '{}' }}

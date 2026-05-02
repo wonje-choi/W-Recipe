@@ -1,0 +1,200 @@
+main(class="min-h-full bg-zinc-50")
+    section(class="bg-white border-b border-zinc-200")
+        div(class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8")
+            button(type="button", class="mb-4 inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:border-emerald-500 hover:text-emerald-700", (click)="goList()")
+                span(aria-hidden="true") ←
+                span 레시피 목록
+            div(*ngIf="loading", class="grid gap-6 lg:grid-cols-[1fr_1.2fr]")
+                div(class="h-72 animate-pulse rounded-md bg-zinc-100")
+                div(class="space-y-3")
+                    div(class="h-5 w-28 animate-pulse rounded bg-zinc-100")
+                    div(class="h-8 w-2/3 animate-pulse rounded bg-zinc-100")
+                    div(class="h-4 w-full animate-pulse rounded bg-zinc-100")
+                    div(class="h-4 w-5/6 animate-pulse rounded bg-zinc-100")
+            div(*ngIf="!loading && errorMessage", class="rounded-md border border-red-200 bg-red-50 p-5 text-[13px] text-red-700") {{ errorMessage }}
+            div(*ngIf="!loading && dish", class="grid gap-6 lg:grid-cols-[1fr_1.2fr]")
+                div(class="relative min-h-[280px] overflow-hidden rounded-md bg-zinc-100 bg-cover bg-center", [style.background-image]="imageStyle()")
+                    div(*ngIf="!dish.hasImage", class="absolute left-3 top-3 rounded-md bg-white/90 px-2.5 py-1 text-xs font-medium text-zinc-600") 이미지 없음
+                div(class="flex flex-col justify-between gap-5")
+                    div
+                        div(class="mb-3 flex flex-wrap items-center gap-2")
+                            span(class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700") {{ dish.category || '일반' }}
+                            span(class="rounded-md bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600") 조회 {{ dish.viewCount | number }}
+                            span(*ngIf="selectedVersion && selectedVersion.aiModified", class="rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700") AI 개량
+                        h1(class="text-2xl font-semibold tracking-normal text-zinc-950 sm:text-3xl") {{ dish.name }}
+                        p(class="mt-3 max-w-2xl text-[13px] leading-6 text-zinc-600") {{ dish.description || selectedVersion?.summary || '등록된 설명이 없습니다.' }}
+                        div(class="mt-4 flex flex-wrap gap-2")
+                            span(*ngFor="let tag of dish.tags", class="rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs text-zinc-600") {{ '#' + tag }}
+                    div(*ngIf="selectedVersion", class="grid grid-cols-2 gap-3 sm:grid-cols-4")
+                        div(class="rounded-md border border-zinc-200 bg-white p-3")
+                            p(class="text-xs text-zinc-500") 난이도
+                            p(class="mt-1 text-[15px] font-semibold text-zinc-950") {{ selectedVersion.difficulty || '-' }}
+                        div(class="rounded-md border border-zinc-200 bg-white p-3")
+                            p(class="text-xs text-zinc-500") 조리시간
+                            p(class="mt-1 text-[15px] font-semibold text-zinc-950") {{ selectedVersion.cookingTime || 0 }}분
+                        div(class="rounded-md border border-zinc-200 bg-white p-3")
+                            p(class="text-xs text-zinc-500") 분량
+                            p(class="mt-1 text-[15px] font-semibold text-zinc-950") {{ selectedVersion.servingSize || '-' }}
+                        div(class="rounded-md border border-zinc-200 bg-white p-3")
+                            p(class="text-xs text-zinc-500") 버전 조회
+                            p(class="mt-1 text-[15px] font-semibold text-zinc-950") {{ selectedVersion.viewCount | number }}
+
+    section(*ngIf="!loading && dish", class="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8")
+        aside(class="space-y-4")
+            div(class="rounded-md border border-zinc-200 bg-white p-4")
+                h2(class="text-[15px] font-semibold text-zinc-950") 레시피 버전
+                p(class="mt-1 text-xs text-zinc-500") 조회수순으로 정렬된 승인 버전
+                div(*ngIf="versions.length === 0", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 승인된 레시피 버전이 없습니다.
+                div(class="mt-4 space-y-2")
+                    button(*ngFor="let version of versions; let index = index", type="button", class="w-full rounded-md border px-3 py-3 text-left text-[13px] transition", [class.border-emerald-500]="selectedVersion && selectedVersion.id === version.id", [class.bg-emerald-50]="selectedVersion && selectedVersion.id === version.id", [class.border-zinc-200]="!selectedVersion || selectedVersion.id !== version.id", [class.bg-white]="!selectedVersion || selectedVersion.id !== version.id", (click)="selectVersion(version)")
+                        div(class="flex items-center justify-between gap-2")
+                            span(class="font-semibold text-zinc-950") {{ version.title || ('버전 ' + (index + 1)) }}
+                            span(*ngIf="version.aiModified", class="rounded-md bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700") AI
+                        div(class="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500")
+                            span {{ version.viewCount | number }}회
+                            span {{ version.difficulty || '난이도 미정' }}
+                            span {{ version.cookingTime || 0 }}분
+            div(class="rounded-md border border-zinc-200 bg-white p-4")
+                h2(class="text-[15px] font-semibold text-zinc-950") 출처
+                div(*ngIf="source && source.available", class="mt-3 space-y-2 text-[13px]")
+                    p(class="font-medium text-zinc-900") {{ source.sourceTitle || '원본 레시피' }}
+                    p(class="text-xs text-zinc-500") {{ source.sourceAuthor || source.sourceType || '출처 정보' }} · {{ source.sourceCollectedAt || '-' }}
+                    a([href]="source.sourceUrl", target="_blank", rel="noopener", class="inline-flex items-center gap-2 rounded-md bg-zinc-950 px-3 py-2 text-[13px] font-semibold text-white hover:bg-zinc-800")
+                        span 원본으로 이동
+                        span(aria-hidden="true") ↗
+                    div(*ngIf="hasSourceRawContent()", class="rounded-md border border-zinc-200 bg-zinc-50 p-3")
+                        button(type="button", (click)="toggleSourceRaw()", class="flex w-full items-center justify-between gap-3 text-left text-[13px] font-semibold text-zinc-800")
+                            span 출처 원문
+                            span(class="text-xs text-zinc-500") {{ sourceRawOpen ? '접기' : '펼치기' }}
+                        p(class="mt-2 text-[11px] leading-5 text-zinc-500") 출처 원문은 저작권자에게 있습니다. 요리 정보 참고 목적으로만 사용하세요.
+                        pre(*ngIf="sourceRawOpen", class="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-white p-3 text-xs leading-6 text-zinc-700") {{ source.rawContent }}
+                div(*ngIf="!source || !source.available", class="mt-3 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") {{ source?.message || '등록된 원본 출처 링크가 없습니다.' }}
+
+        div(class="space-y-6")
+            section(*ngIf="selectedVersion", class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                div(class="flex flex-wrap items-start justify-between gap-3")
+                    div
+                        h2(class="text-lg font-semibold text-zinc-950") {{ selectedVersion.title || dish.name }}
+                        p(class="mt-1 text-[13px] leading-6 text-zinc-600") {{ selectedVersion.summary || '등록된 요약이 없습니다.' }}
+                    button(type="button", class="rounded-md border border-zinc-300 px-3 py-2 text-[13px] font-semibold text-zinc-700 hover:border-emerald-500 hover:text-emerald-700", (click)="toggleEditRequest()") 수정 요청
+
+                div(class="mt-5 grid gap-4 lg:grid-cols-2")
+                    div(class="rounded-md bg-zinc-50 p-4")
+                        h3(class="text-[15px] font-semibold text-zinc-950") 재료와 계량
+                        ul(class="mt-3 space-y-2 text-[13px] text-zinc-700")
+                            li(*ngFor="let item of asList(selectedVersion.ingredients)", class="flex gap-2")
+                                span(class="mt-1 size-1.5 rounded-full bg-emerald-500")
+                                span {{ itemText(item) }}
+                            li(*ngIf="asList(selectedVersion.ingredients).length === 0", class="text-zinc-500") 등록된 재료 정보가 없습니다.
+                    div(class="rounded-md bg-zinc-50 p-4")
+                        h3(class="text-[15px] font-semibold text-zinc-950") 영양·나트륨·알레르기
+                        div(class="mt-3 grid gap-3 sm:grid-cols-2")
+                            div(class="rounded-md bg-white p-3")
+                                p(class="text-xs font-semibold text-zinc-500") 영양 정보
+                                p(*ngFor="let item of objectEntries(selectedVersion.nutritionInfo)", class="mt-1 text-[13px] text-zinc-700") {{ item.key }}: {{ item.value }}
+                                p(*ngIf="objectEntries(selectedVersion.nutritionInfo).length === 0", class="mt-1 text-[13px] text-zinc-500") 정보 없음
+                            div(class="rounded-md bg-white p-3")
+                                p(class="text-xs font-semibold text-zinc-500") 나트륨 정보
+                                p(*ngFor="let item of objectEntries(selectedVersion.sodiumInfo)", class="mt-1 text-[13px] text-zinc-700") {{ item.key }}: {{ item.value }}
+                                p(*ngIf="objectEntries(selectedVersion.sodiumInfo).length === 0", class="mt-1 text-[13px] text-zinc-500") 정보 없음
+                            div(class="rounded-md bg-white p-3 sm:col-span-2")
+                                p(class="text-xs font-semibold text-zinc-500") 알레르기
+                                div(class="mt-2 flex flex-wrap gap-2")
+                                    span(*ngFor="let item of asList(selectedVersion.allergenInfo)", class="rounded-md bg-amber-50 px-2.5 py-1 text-xs text-amber-700") {{ itemText(item) }}
+                                    span(*ngIf="asList(selectedVersion.allergenInfo).length === 0", class="text-[13px] text-zinc-500") 표시된 알레르기 정보가 없습니다.
+
+                div(class="mt-5")
+                    h3(class="text-[15px] font-semibold text-zinc-950") 조리 순서
+                    ol(class="mt-3 space-y-3")
+                        li(*ngFor="let step of asList(selectedVersion.steps); let index = index", class="flex gap-3 rounded-md border border-zinc-200 bg-white p-3")
+                            span(class="flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-xs font-semibold text-white") {{ index + 1 }}
+                            span(class="text-[13px] leading-6 text-zinc-700") {{ itemText(step) }}
+                        li(*ngIf="asList(selectedVersion.steps).length === 0", class="rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 등록된 조리 순서가 없습니다.
+
+                div(class="mt-5 grid gap-4 lg:grid-cols-3")
+                    div(class="rounded-md border border-zinc-200 p-4")
+                        h3(class="text-[15px] font-semibold text-zinc-950") 맛 팁
+                        p(*ngFor="let tip of asList(selectedVersion.cookingTips)", class="mt-2 text-[13px] leading-6 text-zinc-700") {{ itemText(tip) }}
+                        p(*ngIf="asList(selectedVersion.cookingTips).length === 0", class="mt-2 text-[13px] text-zinc-500") 등록된 팁이 없습니다.
+                    div(class="rounded-md border border-zinc-200 p-4")
+                        h3(class="text-[15px] font-semibold text-zinc-950") 실패 방지
+                        p(*ngFor="let tip of asList(selectedVersion.failurePreventionTips)", class="mt-2 text-[13px] leading-6 text-zinc-700") {{ itemText(tip) }}
+                        p(*ngIf="asList(selectedVersion.failurePreventionTips).length === 0", class="mt-2 text-[13px] text-zinc-500") 등록된 팁이 없습니다.
+                    div(class="rounded-md border border-zinc-200 p-4")
+                        h3(class="text-[15px] font-semibold text-zinc-950") 대체 재료
+                        p(*ngFor="let tip of asList(selectedVersion.substitutionTips)", class="mt-2 text-[13px] leading-6 text-zinc-700") {{ itemText(tip) }}
+                        p(*ngIf="asList(selectedVersion.substitutionTips).length === 0", class="mt-2 text-[13px] text-zinc-500") 등록된 팁이 없습니다.
+
+            section(*ngIf="comparison", class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                h2(class="text-lg font-semibold text-zinc-950") 원본·AI 개량 비교
+                div(class="mt-4 overflow-x-auto")
+                    table(class="min-w-full divide-y divide-zinc-200 text-[13px]")
+                        thead(class="bg-zinc-50 text-left text-xs font-semibold text-zinc-500")
+                            tr
+                                th(class="px-3 py-2") 항목
+                                th(class="px-3 py-2") 기준 버전
+                                th(class="px-3 py-2") 선택 버전
+                                th(class="px-3 py-2") 변경
+                        tbody(class="divide-y divide-zinc-100")
+                            tr
+                                td(class="px-3 py-3 font-medium text-zinc-900") 재료
+                                td(class="px-3 py-3 text-zinc-600") {{ asList(comparison.baseVersion.ingredients).length }}개
+                                td(class="px-3 py-3 text-zinc-600") {{ asList(comparison.targetVersion.ingredients).length }}개
+                                td(class="px-3 py-3")
+                                    span(class="rounded-md px-2 py-1 text-xs", [class.bg-emerald-50]="changed('ingredientsChanged')", [class.text-emerald-700]="changed('ingredientsChanged')", [class.bg-zinc-100]="!changed('ingredientsChanged')", [class.text-zinc-500]="!changed('ingredientsChanged')") {{ changed('ingredientsChanged') ? '변경됨' : '동일' }}
+                            tr
+                                td(class="px-3 py-3 font-medium text-zinc-900") 조리 순서
+                                td(class="px-3 py-3 text-zinc-600") {{ asList(comparison.baseVersion.steps).length }}단계
+                                td(class="px-3 py-3 text-zinc-600") {{ asList(comparison.targetVersion.steps).length }}단계
+                                td(class="px-3 py-3")
+                                    span(class="rounded-md px-2 py-1 text-xs", [class.bg-emerald-50]="changed('stepsChanged')", [class.text-emerald-700]="changed('stepsChanged')", [class.bg-zinc-100]="!changed('stepsChanged')", [class.text-zinc-500]="!changed('stepsChanged')") {{ changed('stepsChanged') ? '변경됨' : '동일' }}
+                            tr
+                                td(class="px-3 py-3 font-medium text-zinc-900") 영양
+                                td(class="px-3 py-3 text-zinc-600") {{ objectEntries(comparison.baseVersion.nutritionInfo).length }}항목
+                                td(class="px-3 py-3 text-zinc-600") {{ objectEntries(comparison.targetVersion.nutritionInfo).length }}항목
+                                td(class="px-3 py-3")
+                                    span(class="rounded-md px-2 py-1 text-xs", [class.bg-emerald-50]="changed('nutritionChanged')", [class.text-emerald-700]="changed('nutritionChanged')", [class.bg-zinc-100]="!changed('nutritionChanged')", [class.text-zinc-500]="!changed('nutritionChanged')") {{ changed('nutritionChanged') ? '변경됨' : '동일' }}
+                            tr
+                                td(class="px-3 py-3 font-medium text-zinc-900") 나트륨
+                                td(class="px-3 py-3 text-zinc-600") {{ objectEntries(comparison.baseVersion.sodiumInfo).length }}항목
+                                td(class="px-3 py-3 text-zinc-600") {{ objectEntries(comparison.targetVersion.sodiumInfo).length }}항목
+                                td(class="px-3 py-3")
+                                    span(class="rounded-md px-2 py-1 text-xs", [class.bg-emerald-50]="changed('sodiumChanged')", [class.text-emerald-700]="changed('sodiumChanged')", [class.bg-zinc-100]="!changed('sodiumChanged')", [class.text-zinc-500]="!changed('sodiumChanged')") {{ changed('sodiumChanged') ? '변경됨' : '동일' }}
+
+            section(*ngIf="selectedVersion", class="rounded-md border border-zinc-200 bg-white p-4 sm:p-5")
+                h2(class="text-lg font-semibold text-zinc-950") 댓글
+                div(*ngIf="commentsLoading", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 댓글을 불러오는 중입니다.
+                div(*ngIf="!commentsLoading && comments.length === 0", class="mt-4 rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 아직 등록된 댓글이 없습니다.
+                div(class="mt-4 space-y-3")
+                    article(*ngFor="let comment of comments", class="rounded-md border border-zinc-200 p-3")
+                        div(class="flex items-center justify-between gap-3")
+                            p(class="text-xs font-semibold text-zinc-500") {{ comment.userId }}
+                            p(class="text-xs text-zinc-400") {{ comment.createdAt }}
+                        p(class="mt-2 text-[13px] leading-6 text-zinc-700") {{ comment.content }}
+                div(class="mt-5 border-t border-zinc-200 pt-4")
+                    div(*ngIf="user", class="space-y-3")
+                        textarea([(ngModel)]="commentText", name="detailComment", rows="4", class="block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="댓글을 입력하세요")
+                        div(class="flex flex-wrap items-center justify-between gap-3")
+                            p(class="text-xs text-red-600") {{ commentMessage }}
+                            button(type="button", class="rounded-md bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300", [disabled]="submittingComment", (click)="submitComment()") 댓글 등록
+                    div(*ngIf="!user", class="rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-500") 로그인한 사용자만 댓글을 작성할 수 있습니다.
+
+            section(*ngIf="selectedVersion && editOpen", class="rounded-md border border-emerald-200 bg-emerald-50 p-4 sm:p-5")
+                h2(class="text-lg font-semibold text-zinc-950") 수정 요청
+                div(class="mt-4 grid gap-3 sm:grid-cols-2")
+                    label(class="block")
+                        span(class="text-xs font-semibold text-zinc-600") 요청 유형
+                        select([(ngModel)]="editForm.requestType", name="detailEditType", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            option(*ngFor="let option of editRequestOptions", [value]="option.value") {{ option.label }}
+                    label(class="block")
+                        span(class="text-xs font-semibold text-zinc-600") 참고 링크
+                        input(type="url", [(ngModel)]="editForm.attachmentUrl", name="detailEditAttachment", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://")
+                label(class="mt-3 block")
+                    span(class="text-xs font-semibold text-zinc-600") 요청 내용
+                    textarea([(ngModel)]="editForm.content", name="detailEditContent", rows="5", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="잘못된 정보나 개선 의견을 적어주세요")
+                div(class="mt-4 flex flex-wrap items-center justify-between gap-3")
+                    p(class="text-xs", [class.text-emerald-700]="editMessage === '수정 요청이 접수되었습니다.'", [class.text-red-600]="editMessage !== '수정 요청이 접수되었습니다.'") {{ editMessage }}
+                    div(class="flex gap-2")
+                        button(type="button", class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 hover:border-zinc-400", (click)="toggleEditRequest()") 닫기
+                        button(type="button", class="rounded-md bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300", [disabled]="submittingEditRequest || !user", (click)="submitEditRequest()") 요청 보내기
+                p(*ngIf="!user", class="mt-3 text-xs text-zinc-600") 로그인한 사용자만 수정 요청을 보낼 수 있습니다.

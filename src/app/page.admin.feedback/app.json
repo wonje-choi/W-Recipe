@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.feedback",
+    "mode": "page",
+    "title": "/admin/feedback",
+    "namespace": "admin.feedback",
+    "category": "recipe-admin",
+    "viewuri": "/admin/feedback",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-feedback()"
+}

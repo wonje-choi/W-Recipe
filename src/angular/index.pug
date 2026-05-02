@@ -28,12 +28,7 @@ html(lang="en")
         link(rel="icon" sizes="192x192" href="/assets/brand/icon.ico")
         link(rel="icon" sizes="57x57" href="/assets/brand/icon.ico")
 
-        link(rel="manifest" href="/manifest.json")
-
-        script(type="text/javascript").
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', {scope: '/'}).then((reg) => {});
-            }
+        link(rel="manifest" href="/assets/manifest.json")
 
     body
         app-root

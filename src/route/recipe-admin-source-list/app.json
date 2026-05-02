@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-source-list",
+    "title": "/api/admin/sources",
+    "route": "/api/admin/sources",
+    "category": "recipe-admin",
+    "viewuri": "",
+    "controller": "admin"
+}

@@ -1,0 +1,8 @@
+{
+    "id": "recipe-edit-requests",
+    "title": "/api/recipes/<version_id>/edit-requests",
+    "route": "/api/recipes/<version_id>/edit-requests",
+    "category": "recipe-feedback",
+    "viewuri": "",
+    "controller": "user"
+}

@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.logs",
+    "mode": "page",
+    "title": "/admin/logs",
+    "namespace": "admin.logs",
+    "category": "recipe-admin",
+    "viewuri": "/admin/logs",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-logs()"
+}

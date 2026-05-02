@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.ai",
+    "mode": "page",
+    "title": "/admin/ai",
+    "namespace": "admin.ai",
+    "category": "recipe-admin",
+    "viewuri": "/admin/ai",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-ai()"
+}

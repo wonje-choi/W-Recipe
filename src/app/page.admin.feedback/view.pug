@@ -1,0 +1,243 @@
+section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
+    div(class="mx-auto flex max-w-7xl flex-col gap-4")
+        header(class="flex flex-col gap-3 border-b border-zinc-200 pb-4 lg:flex-row lg:items-end lg:justify-between")
+            div
+                p(class="text-xs font-medium text-emerald-700") 관리자
+                h1(class="mt-1 text-lg font-semibold text-zinc-950") 참여 관리
+                p(class="mt-1 text-[13px] text-zinc-600") 댓글, 신고, 수정 요청 처리 상태를 관리합니다.
+            div(class="flex flex-wrap gap-2")
+                button(type="button", (click)="load()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+                button(*ngIf="activeTab === 'experts'", type="button", (click)="newExpert()", class="rounded-md bg-zinc-900 px-3 py-2 text-[13px] font-medium text-white hover:bg-zinc-700") 전문가 추가
+
+        div(class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5")
+            button(type="button", (click)="selectTab('comments')", class="rounded-md border border-zinc-200 bg-white p-3 text-left hover:border-emerald-300")
+                p(class="text-xs font-medium text-zinc-500") 전체 댓글
+                p(class="mt-1 text-xl font-semibold text-zinc-950") {{ summary.comments | number }}
+            button(type="button", (click)="activeTab = 'comments'; commentFilters.reportedOnly = true; loadComments(1)", class="rounded-md border border-amber-200 bg-amber-50 p-3 text-left hover:border-amber-400")
+                p(class="text-xs font-medium text-amber-700") 신고된 댓글
+                p(class="mt-1 text-xl font-semibold text-amber-900") {{ summary.reportedComments | number }}
+            button(type="button", (click)="activeTab = 'reports'; reportFilters.status = 'open'; loadReports(1)", class="rounded-md border border-rose-200 bg-rose-50 p-3 text-left hover:border-rose-400")
+                p(class="text-xs font-medium text-rose-700") 처리 대기 신고
+                p(class="mt-1 text-xl font-semibold text-rose-900") {{ summary.openReports | number }}
+            button(type="button", (click)="activeTab = 'edit-requests'; editFilters.status = 'open'; loadEditRequests(1)", class="rounded-md border border-violet-200 bg-violet-50 p-3 text-left hover:border-violet-400")
+                p(class="text-xs font-medium text-violet-700") 처리 대기 수정 요청
+                p(class="mt-1 text-xl font-semibold text-violet-900") {{ summary.openEditRequests | number }}
+            button(type="button", (click)="activeTab = 'members'; memberFilters.plan = 'premium'; loadMembers(1)", class="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-left hover:border-emerald-400")
+                p(class="text-xs font-medium text-emerald-700") 프리미엄 회원
+                p(class="mt-1 text-xl font-semibold text-emerald-900") {{ summary.premiumMembers | number }}
+
+        div(class="flex flex-wrap gap-2")
+            button(*ngFor="let tab of tabs", type="button", (click)="selectTab(tab.key)", [ngClass]="tabClass(tab.key)", class="rounded-md border px-3 py-2 text-[13px] font-medium") {{ tab.label }}
+
+        div(class="rounded-lg border border-zinc-200 bg-white p-3")
+            form(class="grid gap-2 lg:grid-cols-[minmax(180px,1fr)_150px_150px_auto]", (submit)="$event.preventDefault(); search()")
+                input(*ngIf="activeTab === 'comments'", type="search", [(ngModel)]="commentFilters.text", name="commentText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="댓글 내용, 사용자 ID 검색")
+                input(*ngIf="activeTab === 'reports'", type="search", [(ngModel)]="reportFilters.text", name="reportText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="신고 사유, 대상, 메모 검색")
+                input(*ngIf="activeTab === 'edit-requests'", type="search", [(ngModel)]="editFilters.text", name="editText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="수정 요청 내용, 사용자 ID 검색")
+                input(*ngIf="activeTab === 'members'", type="search", [(ngModel)]="memberFilters.text", name="memberText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="이메일, 닉네임, 사용자 ID 검색")
+                input(*ngIf="activeTab === 'experts'", type="search", [(ngModel)]="expertFilters.text", name="expertText", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="전문가 이름, 이메일, 분야 검색")
+
+                select(*ngIf="activeTab === 'comments'", [(ngModel)]="commentFilters.status", name="commentStatus", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 상태
+                    option(*ngFor="let status of options.commentStatuses", [value]="status.value") {{ status.label }}
+                select(*ngIf="activeTab === 'reports'", [(ngModel)]="reportFilters.status", name="reportStatus", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 상태
+                    option(*ngFor="let status of options.reportStatuses", [value]="status.value") {{ status.label }}
+                select(*ngIf="activeTab === 'edit-requests'", [(ngModel)]="editFilters.status", name="editStatus", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 상태
+                    option(*ngFor="let status of options.editRequestStatuses", [value]="status.value") {{ status.label }}
+                select(*ngIf="activeTab === 'members'", [(ngModel)]="memberFilters.plan", name="memberPlan", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 플랜
+                    option(*ngFor="let plan of options.subscriptionPlans", [value]="plan.value") {{ plan.label }}
+                select(*ngIf="activeTab === 'experts'", [(ngModel)]="expertFilters.status", name="expertStatus", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 상태
+                    option(*ngFor="let status of options.expertStatuses", [value]="status.value") {{ status.label }}
+
+                button(*ngIf="activeTab === 'comments'", type="button", (click)="toggleReportedOnly()", [ngClass]="commentFilters.reportedOnly ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-zinc-300 bg-white text-zinc-700'", class="min-h-[38px] rounded-md border px-3 text-[13px] font-medium") 신고 댓글
+                select(*ngIf="activeTab === 'reports'", [(ngModel)]="reportFilters.targetType", name="reportTargetType", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 대상
+                    option(*ngFor="let type of options.reportTargetTypes", [value]="type.value") {{ type.label }}
+                select(*ngIf="activeTab === 'edit-requests'", [(ngModel)]="editFilters.requestType", name="editRequestType", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                    option(value="") 모든 유형
+                    option(*ngFor="let type of options.editRequestTypes", [value]="type.value") {{ type.label }}
+                div(*ngIf="activeTab === 'members'", class="min-h-[38px]")
+                div(*ngIf="activeTab === 'experts'", class="min-h-[38px]")
+
+                div(class="flex gap-2")
+                    button(type="submit", class="min-h-[38px] rounded-md bg-zinc-900 px-3 text-[13px] font-medium text-white hover:bg-zinc-700") 검색
+                    button(type="button", (click)="resetFilters()", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+
+        p(*ngIf="message", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700") {{ message }}
+
+        div(class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]")
+            div(class="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white")
+                div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                    p(class="text-[13px] font-medium text-zinc-800") 총 {{ currentTotal() | number }}개
+                    p(class="text-xs text-zinc-500") {{ currentPage() }} / {{ totalPages(currentTotal()) }} 페이지
+
+                div(*ngIf="loading", class="p-8 text-center text-[13px] text-zinc-500") 목록을 불러오는 중입니다.
+
+                div(*ngIf="!loading && activeTab === 'comments'", class="divide-y divide-zinc-100")
+                    button(*ngFor="let item of commentItems", type="button", (click)="selectItem(item, 'comment')", class="block w-full px-4 py-3 text-left hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selectedType === 'comment' ? 'bg-emerald-50' : ''")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="line-clamp-2 text-[13px] font-semibold text-zinc-950") {{ item.content }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ item.user.nickname || item.user.email || item.userId }} · {{ item.recipe.dishName || item.recipe.versionTitle || item.recipeVersionId }}
+                            span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.statusLabel }}
+                        p(class="mt-2 text-xs text-zinc-500") 신고 {{ item.reportCount || 0 }}회 · {{ item.createdAt || '-' }}
+                    div(*ngIf="commentItems.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 댓글이 없습니다.
+
+                div(*ngIf="!loading && activeTab === 'reports'", class="divide-y divide-zinc-100")
+                    button(*ngFor="let item of reportItems", type="button", (click)="selectItem(item, 'report')", class="block w-full px-4 py-3 text-left hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selectedType === 'report' ? 'bg-emerald-50' : ''")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.reasonLabel }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ item.targetTypeLabel }} · {{ item.target.title || item.targetId }}
+                            span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.statusLabel }}
+                        p(class="mt-2 line-clamp-2 text-xs text-zinc-500") {{ item.detail || '상세 내용 없음' }}
+                    div(*ngIf="reportItems.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 신고가 없습니다.
+
+                div(*ngIf="!loading && activeTab === 'edit-requests'", class="divide-y divide-zinc-100")
+                    article(*ngFor="let item of editItems", class="px-4 py-3 hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selectedType === 'edit' ? 'bg-emerald-50' : ''")
+                        button(type="button", (click)="selectItem(item, 'edit')", class="block w-full text-left")
+                            div(class="flex items-start justify-between gap-3")
+                                div(class="min-w-0")
+                                    p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.requestTypeLabel }}
+                                    p(class="mt-1 text-xs text-zinc-500") {{ item.user.nickname || item.user.email || item.userId }} · {{ item.recipe.dishName || item.recipe.versionTitle || item.recipeVersionId }}
+                                span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.statusLabel }}
+                            p(class="mt-2 line-clamp-2 text-xs text-zinc-500") {{ item.content }}
+                            p(class="mt-2 text-xs text-zinc-500") 전문가: {{ item.expertAssignment.expert?.name || '미배정' }} · {{ item.expertAssignment.statusLabel || '미배정' }}
+                        div(class="mt-3 grid gap-2 sm:grid-cols-[1fr_120px_auto]")
+                            select([(ngModel)]="item.expertAssignment.expertId", name="rowExpert{{ item.id }}", class="min-h-[34px] rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(value="") 전문가 선택
+                                option(*ngFor="let expert of options.experts", [value]="expert.id") {{ expert.name }} · {{ expert.specialty || '일반' }}
+                            select([(ngModel)]="item.expertAssignment.status", name="rowExpertStatus{{ item.id }}", class="min-h-[34px] rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(*ngFor="let status of options.expertAssignmentStatuses", [value]="status.value") {{ status.label }}
+                            button(type="button", (click)="saveAssignment(item)", [disabled]="!!actionLoading || !item.expertAssignment.expertId", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-wait disabled:opacity-50") 배정 저장
+                    div(*ngIf="editItems.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 수정 요청이 없습니다.
+
+                div(*ngIf="!loading && activeTab === 'members'", class="divide-y divide-zinc-100")
+                    button(*ngFor="let item of memberItems", type="button", (click)="selectItem(item, 'member')", class="block w-full px-4 py-3 text-left hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selectedType === 'member' ? 'bg-emerald-50' : ''")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.nickname || item.email || item.id }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ item.email || item.id }} · {{ item.role }} · {{ item.statusLabel || item.status }}
+                            span([ngClass]="subscriptionClass(item.subscriptionPlan)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.subscriptionPlanLabel || item.subscriptionPlan }}
+                        p(class="mt-2 text-xs text-zinc-500") 만료일 {{ item.subscriptionExpiresAt || '없음' }}
+                    div(*ngIf="memberItems.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 회원이 없습니다.
+
+                div(*ngIf="!loading && activeTab === 'experts'", class="divide-y divide-zinc-100")
+                    button(*ngFor="let item of expertItems", type="button", (click)="selectItem(item, 'expert')", class="block w-full px-4 py-3 text-left hover:bg-zinc-50", [ngClass]="selected && selected.id === item.id && selectedType === 'expert' ? 'bg-emerald-50' : ''")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="line-clamp-1 text-[13px] font-semibold text-zinc-950") {{ item.name }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ item.email || '이메일 없음' }} · {{ item.specialty || '전문 분야 없음' }}
+                            span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ item.statusLabel || item.status }}
+                    div(*ngIf="expertItems.length === 0", class="px-4 py-10 text-center text-[13px] text-zinc-500") 등록된 전문가가 없습니다.
+
+                div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                    button(type="button", (click)="prevPage()", [disabled]="currentPage() <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 이전
+                    button(type="button", (click)="nextPage()", [disabled]="currentPage() >= totalPages(currentTotal())", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40") 다음
+
+            aside(class="min-w-0")
+                div(*ngIf="!selected", class="rounded-lg border border-zinc-200 bg-white p-5 text-[13px] text-zinc-600")
+                    p(class="font-medium text-zinc-900") 선택된 항목이 없습니다.
+                    p(class="mt-2") 목록에서 항목을 선택하면 처리 액션이 표시됩니다.
+                div(*ngIf="selected", class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="border-b border-zinc-200 px-4 py-3")
+                        div(class="flex items-start justify-between gap-3")
+                            div(class="min-w-0")
+                                p(class="text-[13px] font-semibold text-zinc-950") {{ selectedTitle() }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ selected.createdAt || '-' }}
+                            span([ngClass]="statusClass(selected.status)", class="shrink-0 rounded border px-2 py-1 text-xs font-medium") {{ selected.statusLabel }}
+
+                    div(class="flex max-h-[calc(100vh-180px)] flex-col gap-4 overflow-auto p-4")
+                        section(class="space-y-2")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 상세
+                            p(*ngIf="selectedType === 'comment'", class="whitespace-pre-wrap rounded-md bg-zinc-50 p-3 text-[13px] leading-6 text-zinc-700") {{ selected.content }}
+                            div(*ngIf="selectedType === 'report'", class="space-y-2")
+                                p(class="rounded-md bg-zinc-50 p-3 text-[13px] leading-6 text-zinc-700") {{ selected.detail || '상세 내용 없음' }}
+                                p(class="text-xs text-zinc-500") 대상: {{ selected.targetTypeLabel }} · {{ selected.target.title || selected.targetId }}
+                            div(*ngIf="selectedType === 'edit'", class="space-y-2")
+                                p(class="whitespace-pre-wrap rounded-md bg-zinc-50 p-3 text-[13px] leading-6 text-zinc-700") {{ selected.content }}
+                                a(*ngIf="selected.attachmentUrl", [href]="selected.attachmentUrl", target="_blank", rel="noopener", class="text-xs font-medium text-emerald-700") 첨부 열기
+
+                        section(*ngIf="selectedType !== 'expert'", class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 사용자
+                            div(class="rounded-md bg-zinc-50 p-3 text-[13px] text-zinc-700")
+                                p(class="font-medium text-zinc-950") {{ subjectUser()?.nickname || subjectUser()?.email || subjectUser()?.id || '사용자 없음' }}
+                                p(class="mt-1 text-xs text-zinc-500") {{ subjectUser()?.email || subjectUser()?.id }}
+                                span(*ngIf="subjectUser()?.status", [ngClass]="statusClass(subjectUser()?.status)", class="mt-2 inline-flex rounded border px-2 py-1 text-xs font-medium") {{ subjectUser()?.statusLabel || subjectUser()?.status }}
+
+                        section(*ngIf="selected.recipe || selected.target?.recipe || selected.target?.comment?.recipe", class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 대상 레시피
+                            p(class="line-clamp-2 text-[13px] text-zinc-700") {{ selected.recipe?.dishName || selected.recipe?.versionTitle || selected.target?.recipe?.dishName || selected.target?.recipe?.versionTitle || selected.target?.comment?.recipe?.dishName || selected.target?.comment?.recipe?.versionTitle }}
+                            button(type="button", (click)="openRecipe()", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 레시피 열기
+
+                        section(*ngIf="selectedType === 'edit'", class="space-y-3 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 전문가 검수
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 담당 전문가
+                                select([(ngModel)]="selected.expertAssignment.expertId", name="selectedExpertId", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                    option(value="") 전문가 선택
+                                    option(*ngFor="let expert of options.experts", [value]="expert.id") {{ expert.name }} · {{ expert.specialty || '일반' }}
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 배정 상태
+                                select([(ngModel)]="selected.expertAssignment.status", name="selectedExpertStatus", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                    option(*ngFor="let status of options.expertAssignmentStatuses", [value]="status.value") {{ status.label }}
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 검수 의견
+                                textarea([(ngModel)]="selected.expertAssignment.reviewNote", name="selectedExpertReviewNote", rows="4", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            button(type="button", (click)="saveAssignment()", [disabled]="!!actionLoading || !selected.expertAssignment.expertId", class="w-full rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:bg-zinc-300") 전문가 배정 저장
+
+                        section(*ngIf="selectedType === 'expert'", class="space-y-3 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 전문가 정보
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 이름
+                                input(type="text", [(ngModel)]="selected.name", name="expertName", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 이메일
+                                input(type="email", [(ngModel)]="selected.email", name="expertEmail", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 전문 분야
+                                input(type="text", [(ngModel)]="selected.specialty", name="expertSpecialty", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="영유아식, 저염식, 임상영양")
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 상태
+                                select([(ngModel)]="selected.status", name="expertStatusValue", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                    option(*ngFor="let status of options.expertStatuses", [value]="status.value") {{ status.label }}
+                            button(type="button", (click)="saveExpert()", [disabled]="!!actionLoading", class="w-full rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:bg-zinc-300") 전문가 저장
+
+                        section(*ngIf="selectedType !== 'member' && selectedType !== 'expert'", class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 관리자 메모
+                            textarea([(ngModel)]="memoDraft", name="adminMemo", rows="4", class="block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+
+                        section(*ngIf="selectedType === 'member'", class="space-y-3 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 구독 플랜
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 플랜
+                                select([(ngModel)]="selected.subscriptionPlan", name="selectedSubscriptionPlan", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                    option(*ngFor="let plan of options.subscriptionPlans", [value]="plan.value") {{ plan.label }}
+                            label(class="block")
+                                span(class="text-xs font-semibold text-zinc-600") 만료일
+                                input(type="date", [(ngModel)]="selected.subscriptionExpiresAt", name="selectedSubscriptionExpiresAt", [disabled]="selected.subscriptionPlan !== 'premium'", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:bg-zinc-50 disabled:text-zinc-400")
+                            p(class="text-xs leading-5 text-zinc-500") 결제 연동 없이 관리자가 수동으로 Premium 플랜을 활성화합니다. 만료일을 비우면 기간 제한 없이 유지됩니다.
+                            button(type="button", (click)="saveSubscription()", [disabled]="!!actionLoading", class="w-full rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:bg-zinc-300") 구독 저장
+
+                        section(*ngIf="selectedType !== 'member' && selectedType !== 'expert'", class="space-y-2 border-t border-zinc-200 pt-4")
+                            h2(class="text-[15px] font-semibold text-zinc-950") 처리 액션
+                            div(*ngIf="selectedType === 'comment'", class="grid gap-2 sm:grid-cols-2")
+                                button(type="button", (click)="commentAction('hide')", [disabled]="!!actionLoading", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 disabled:cursor-wait disabled:opacity-50") 숨김
+                                button(type="button", (click)="commentAction('delete')", [disabled]="!!actionLoading", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 disabled:cursor-wait disabled:opacity-50") 삭제
+                                button(type="button", (click)="commentAction('restore')", [disabled]="!!actionLoading", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 disabled:cursor-wait disabled:opacity-50") 표시 복구
+                                button(type="button", (click)="suspendUser()", [disabled]="!!actionLoading || !subjectUser()?.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-wait disabled:opacity-50") 사용자 제재
+                            div(*ngIf="selectedType === 'report'", class="grid gap-2 sm:grid-cols-2")
+                                button(type="button", (click)="reportAction('in_review')", [disabled]="!!actionLoading", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 disabled:cursor-wait disabled:opacity-50") 검토 중
+                                button(type="button", (click)="reportAction('actioned')", [disabled]="!!actionLoading", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 disabled:cursor-wait disabled:opacity-50") 조치 완료
+                                button(type="button", (click)="reportAction('rejected')", [disabled]="!!actionLoading", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-wait disabled:opacity-50") 반려
+                                button(type="button", (click)="suspendUser()", [disabled]="!!actionLoading || !subjectUser()?.id", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 disabled:cursor-wait disabled:opacity-50") 대상 사용자 제재
+                                button(*ngIf="selected.targetType === 'comment'", type="button", (click)="commentAction('hide', selected.target.comment)", [disabled]="!!actionLoading", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 disabled:cursor-wait disabled:opacity-50") 대상 댓글 숨김
+                            div(*ngIf="selectedType === 'edit'", class="grid gap-2 sm:grid-cols-2")
+                                button(type="button", (click)="editRequestAction('in_review')", [disabled]="!!actionLoading", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 disabled:cursor-wait disabled:opacity-50") 검토 중
+                                button(type="button", (click)="editRequestAction('resolved')", [disabled]="!!actionLoading", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 disabled:cursor-wait disabled:opacity-50") 해결
+                                button(type="button", (click)="editRequestAction('rejected')", [disabled]="!!actionLoading", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 disabled:cursor-wait disabled:opacity-50") 반려
+                                button(type="button", (click)="suspendUser()", [disabled]="!!actionLoading || !subjectUser()?.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:cursor-wait disabled:opacity-50") 사용자 제재

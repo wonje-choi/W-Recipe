@@ -1,0 +1,8 @@
+{
+    "id": "recipe-admin-review",
+    "title": "/api/admin/reviews/<path:path>",
+    "route": "/api/admin/reviews/<path:path>",
+    "category": "recipe-admin",
+    "viewuri": "",
+    "controller": "admin"
+}

@@ -1,0 +1,11 @@
+{
+    "mode": "page",
+    "id": "page.recipe.ai.modify",
+    "title": "/ai/modify",
+    "namespace": "recipe.ai.modify",
+    "viewuri": "/ai/modify",
+    "category": "recipe",
+    "controller": "base",
+    "layout": "layout.recipe",
+    "template": "wiz-page-recipe-ai-modify()"
+}

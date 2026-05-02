@@ -1,0 +1,8 @@
+{
+    "id": "recipe-comments",
+    "title": "/api/recipes/<version_id>/comments",
+    "route": "/api/recipes/<version_id>/comments",
+    "category": "recipe-engagement",
+    "viewuri": "",
+    "controller": "base"
+}

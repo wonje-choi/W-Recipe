@@ -4,8 +4,8 @@
     "title": "/dashboard",
     "namespace": "dashboard",
     "viewuri": "/dashboard",
-    "category": "",
-    "controller": "user",
-    "layout": "layout.sidebar",
+    "category": "recipe",
+    "controller": "admin",
+    "layout": "layout.recipe",
     "template": "wiz-page-dashboard()"
 }
