@@ -36,6 +36,7 @@ export class Component implements OnInit {
         { labelKey: 'nav.adminAi', label: 'AI 관리', href: '/admin/ai?tab=reviews', admin: true },
         { labelKey: 'nav.adminSettings', label: '설정', href: '/admin/ai?tab=settings', admin: true },
         { labelKey: 'nav.adminSources', label: '출처 관리', href: '/admin/sources', admin: true },
+        { labelKey: 'nav.adminCollector', label: '수집 대시보드', href: '/admin/collector', admin: true },
         { labelKey: 'nav.adminFeedback', label: '참여 관리', href: '/admin/feedback', admin: true },
         { labelKey: 'nav.adminLogs', label: '시스템 로그', href: '/admin/logs', admin: true },
     ];
@@ -93,10 +94,21 @@ export class Component implements OnInit {
     }
 
     public async loadUser() {
-        let { code, data } = await wiz.call('me');
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('me');
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            this.user = null;
+            return;
+        }
         if (code === 200) {
             this.setCsrfToken(data);
             this.user = data.user || null;
+        } else {
+            this.user = null;
         }
     }
 
@@ -169,10 +181,18 @@ export class Component implements OnInit {
         }
         this.loginLoading = true;
         await this.service.render();
-        let { code, data } = await wiz.call('login', {
-            email: this.loginForm.email,
-            password: this.loginForm.password,
-        });
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('login', {
+                email: this.loginForm.email,
+                password: this.loginForm.password,
+            });
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            data = { message: this.t('auth.failed', '로그인에 실패했습니다.') };
+        }
         this.loginLoading = false;
         this.setCsrfToken(data);
         if (code === 200) {
@@ -188,7 +208,13 @@ export class Component implements OnInit {
     }
 
     public async logout() {
-        let { data } = await wiz.call('logout', {});
+        let data: any = {};
+        try {
+            let response = await wiz.call('logout', {});
+            data = response.data || {};
+        } catch (error) {
+            data = {};
+        }
         this.setCsrfToken(data);
         this.user = null;
         this.mobileOpen = false;

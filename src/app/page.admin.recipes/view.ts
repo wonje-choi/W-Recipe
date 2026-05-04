@@ -1,8 +1,6 @@
 import { OnInit } from '@angular/core';
 import { Service } from '@wiz/libs/portal/season/service';
 
-declare const wiz: any;
-
 export class Component implements OnInit {
     constructor(public service: Service) { }
 

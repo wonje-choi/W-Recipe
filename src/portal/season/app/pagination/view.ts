@@ -7,10 +7,10 @@ export class Component implements OnInit, OnChanges {
     @Input() maxlength: any = 10;
     @Output() pageMove = new EventEmitter<number>();
 
+    public Math = Math;
     public list: Array<number> = [];
 
     public async ngOnInit() {
-        this.Math = Math;
     }
 
     public async ngOnChanges() {

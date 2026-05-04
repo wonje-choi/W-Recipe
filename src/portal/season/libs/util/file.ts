@@ -201,7 +201,7 @@ export default class File {
 
         let filenode = this.filenode = $(`<input type='file' ${opts.accept ? `accept='${opts.accept}'` : ''} ${opts.multiple ? 'multiple' : ''} />`);
 
-        let result = {};
+        let result: any = {};
 
         result.text = () => new Promise((resolve) => {
             let targetLoader = (target) => new Promise((_resolve) => {
@@ -231,7 +231,7 @@ export default class File {
             let targetLoader = (target) => new Promise((_resolve) => {
                 let fr = new FileReader();
                 fr.onload = async () => {
-                    let data = fr.result;
+                    let data: any = fr.result;
                     data = JSON.parse(data);
                     _resolve(data);
                 };

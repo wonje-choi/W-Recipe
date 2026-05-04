@@ -11,7 +11,7 @@
   "nav.adminSources": "출처 관리",
   "nav.adminFeedback": "참여 관리",
   "nav.adminLogs": "시스템 로그",
-  "nav.adminDashboard": "Admin Dashboard",
+  "nav.adminDashboard": "대시보드",
   "auth.login": "로그인",
   "auth.logout": "로그아웃",
   "auth.loginTitle": "로그인",
@@ -24,5 +24,6 @@
   "auth.missing": "이메일과 비밀번호를 입력해주세요.",
   "auth.failed": "로그인에 실패했습니다.",
   "layout.menu": "메뉴",
-  "layout.close": "닫기"
+  "layout.close": "닫기",
+  "layout.primaryNav": "주요 메뉴"
 }

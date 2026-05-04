@@ -35,7 +35,7 @@ export default class Crypto {
             var HASH = new Array(0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19);
 
             var W = new Array(64);
-            var a, b, c, d, e, f, g, h, i, j;
+            var a, b, c, d, e, f, g, h;
             var T1, T2;
 
             m[l >> 5] |= 0x80 << (24 - l % 32);

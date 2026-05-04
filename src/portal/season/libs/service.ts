@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { ChangeDetectorRef } from '@angular/core';
 
 import Auth from './src/auth';
 import Event from './src/event';
@@ -14,7 +13,7 @@ import Formatter from './util/formatter';
 
 @Injectable({ providedIn: 'root' })
 export class Service {
-    public app: ChangeDetectorRef;
+    public app: any;
     public inited: boolean = false;
 
     public auth: Auth;
@@ -30,10 +29,8 @@ export class Service {
 
     constructor() { }
 
-    public async init(app: any) {
-        if (app) {
-            this.app = app;
-
+    public async init(app?: any) {
+        if (!this.auth) {
             this.crypto = new Crypto();
             this.file = new File();
             this.request = new Request();
@@ -43,10 +40,14 @@ export class Service {
             this.modal = new Modal(this);
             this.status = new Status(this);
             this.event = new Event(this);
+        }
+
+        if (app) {
+            this.app = app;
 
             if (this.app.translate) {
                 this.lang = new Lang(this);
-                let lang: string = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
+                let lang: string = (navigator.language || (navigator as any).userLanguage).substring(0, 2).toLowerCase();
                 if (!['ko', 'en'].includes(lang)) lang = 'en';
                 this.lang.set(lang);
             }
@@ -72,10 +73,10 @@ export class Service {
             setTimeout(resolve, time);
         });
         if (time > 0) {
-            this.app.ref.detectChanges();
+            this.app?.ref?.detectChanges();
             await timeout();
         }
-        this.app.ref.detectChanges();
+        this.app?.ref?.detectChanges();
     }
 
     public href(url: any) {

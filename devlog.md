@@ -57,3 +57,10 @@
 | 2026-05-01 | 054 | 유료 구독 모델과 프리미엄 접근 제어 구현 | [상세](devlog/2026-05-01/054-premium-subscription-access.md) |
 | 2026-05-01 | 055 | 영양사 전문가 배정과 검수 의견 관리 구현 | [상세](devlog/2026-05-01/055-expert-assignment-review.md) |
 | 2026-05-01 | 056 | YouTube API 설정과 업로드 메타데이터 미리보기 구현 | [상세](devlog/2026-05-01/056-youtube-api-upload-metadata.md) |
+| 2026-05-04 | 001 | MVP 확장성 설계 대상 페이지 식별 | [상세](devlog/2026-05-04/001-mvp-scalability-page-audit.md) |
+| 2026-05-04 | 002 | MVP 기능 범위 및 우선순위 정리 | [상세](devlog/2026-05-04/002-mvp-feature-priority.md) |
+| 2026-05-04 | 003 | 확장 가능한 페이지 및 컴포넌트 구조 설계 | [상세](devlog/2026-05-04/003-page-component-scalability.md) |
+| 2026-05-04 | 004 | 데이터 모델, 상태 관리, API 전환 구조 설계 | [상세](devlog/2026-05-04/004-data-state-api-scalability.md) |
+| 2026-05-04 | 005 | 권한, 사용자 유형, UX 상태 확장 설계 | [상세](devlog/2026-05-04/005-permission-ux-scalability.md) |
+| 2026-05-04 | 006 | MVP 확장성 설계 문서 및 구현 TODO 후보 작성 | [상세](devlog/2026-05-04/006-mvp-scalability-final-design.md) |
+| 2026-05-04 | 036 | 수집 결과 → 검수 대기 레시피 등록 런타임 검증 | [상세](devlog/2026-05-04/036-collector-promote-runtime-validation.md) |

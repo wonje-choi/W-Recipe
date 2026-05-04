@@ -44,7 +44,15 @@ export class Component implements OnInit {
     public async load() {
         this.loading = true;
         await this.service.render();
-        let { code, data } = await wiz.call('load', {});
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('load', {});
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            data = {};
+        }
         this.loading = false;
         if (code === 200) {
             this.recommended = data.recommended || [];
@@ -52,6 +60,12 @@ export class Component implements OnInit {
             this.randomItems = data.randomItems || [];
             this.latest = data.latest || [];
             this.keywords = data.keywords || [];
+        } else {
+            this.recommended = [];
+            this.popular = [];
+            this.randomItems = [];
+            this.latest = [];
+            this.keywords = [];
         }
         await this.service.render();
     }

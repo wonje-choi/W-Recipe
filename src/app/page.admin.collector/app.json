@@ -1,0 +1,12 @@
+{
+    "id": "page.admin.collector",
+    "mode": "page",
+    "title": "/admin/collector",
+    "namespace": "admin.collector",
+    "category": "recipe-admin",
+    "viewuri": "/admin/collector",
+    "preview": "",
+    "controller": "admin",
+    "layout": "layout.recipe",
+    "template": "wiz-page-admin-collector()"
+}

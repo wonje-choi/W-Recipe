@@ -2,6 +2,7 @@ import Service from '../service';
 import Request from '../util/request';
 
 export default class Auth {
+    public request: Request;
     public verified: string | null = null;
 
     public timestamp: number = 0;

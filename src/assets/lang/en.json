@@ -11,7 +11,7 @@
   "nav.adminSources": "Sources",
   "nav.adminFeedback": "Feedback",
   "nav.adminLogs": "System Logs",
-  "nav.adminDashboard": "Admin Dashboard",
+  "nav.adminDashboard": "Dashboard",
   "auth.login": "Log in",
   "auth.logout": "Log out",
   "auth.loginTitle": "Log in",
@@ -24,5 +24,6 @@
   "auth.missing": "Enter your email and password.",
   "auth.failed": "Login failed.",
   "layout.menu": "Menu",
-  "layout.close": "Close"
+  "layout.close": "Close",
+  "layout.primaryNav": "Primary navigation"
 }

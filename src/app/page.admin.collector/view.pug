@@ -1,0 +1,161 @@
+section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
+    div(class="mx-auto flex max-w-7xl flex-col gap-4")
+        header(class="flex flex-col gap-3 border-b border-zinc-200 pb-4 lg:flex-row lg:items-end lg:justify-between")
+            div
+                p(class="text-xs font-medium text-emerald-700") 관리자
+                h1(class="mt-1 text-lg font-semibold text-zinc-950") 웹/유튜브 수집 대시보드
+                p(class="mt-1 text-[13px] leading-5 text-zinc-600") 키워드로 웹/유튜브 후보 링크를 수집하고, 레시피 재료와 조리법 검수 정보를 관리합니다.
+            div(class="flex flex-wrap items-center gap-2")
+                button(type="button", (click)="loadDashboard()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 새로고침
+                button(type="button", (click)="exportResults('json')", [disabled]="actionLoadingId === 'export-json'", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-wait disabled:opacity-50") JSON
+                button(type="button", (click)="exportResults('csv')", [disabled]="actionLoadingId === 'export-csv'", class="rounded-md bg-zinc-900 px-3 py-2 text-[13px] font-medium text-white hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-50") CSV
+
+        div(*ngIf="message", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700") {{ message }}
+        div(*ngIf="loading", class="rounded-lg border border-zinc-200 bg-white p-8 text-center text-[13px] text-zinc-500") 수집 대시보드를 불러오는 중입니다.
+
+        div(*ngIf="!loading", class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4")
+            button(*ngFor="let item of statusSummary", type="button", (click)="requestFilters.status = item.value; loadRequests(1)", [ngClass]="requestFilters.status === item.value ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-zinc-200 bg-white text-zinc-600'", class="rounded-md border px-3 py-3 text-left transition hover:border-emerald-300")
+                p(class="text-xs font-medium") {{ item.label }}
+                p(class="mt-1 text-xl font-semibold") {{ item.count | number }}
+
+        div(*ngIf="!loading", class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]")
+            aside(class="flex min-w-0 flex-col gap-4")
+                section(class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="border-b border-zinc-200 px-4 py-3")
+                        h2(class="text-[15px] font-semibold text-zinc-950") 수집 요청 등록
+                        p(class="mt-0.5 text-xs leading-5 text-zinc-500") 음식명이나 키워드를 입력하면 웹/유튜브 검색 후보와 원본 링크를 저장합니다.
+                    form(class="space-y-4 p-4", (submit)="$event.preventDefault(); submitRequest()")
+                        div(*ngIf="formMessage", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800") {{ formMessage }}
+                        div(class="grid grid-cols-2 gap-2")
+                            button(type="button", (click)="useKeywordMode('web')", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100") 웹 키워드
+                            button(type="button", (click)="useKeywordMode('youtube')", class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100") 유튜브 키워드
+                        label(class="block text-xs font-medium text-zinc-600") 수집 타입
+                            select([(ngModel)]="form.targetType", name="collectorTargetType", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(*ngFor="let type of options.targetTypes", [value]="type.value") {{ type.label }}
+                        label(class="block text-xs font-medium text-zinc-600") 키워드 또는 URL
+                            textarea([(ngModel)]="form.targetValue", name="collectorTargetValue", rows="4", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] leading-6 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://example.com 또는 검색어")
+                        div(class="grid grid-cols-2 gap-3")
+                            label(class="block text-xs font-medium text-zinc-600") 최대 개수
+                                input(type="number", min="1", [max]="options.limits.maxItems", [(ngModel)]="form.maxItems", name="collectorMaxItems", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            label(class="flex items-end gap-2 rounded-md border border-zinc-200 px-3 py-2 text-[13px] text-zinc-700")
+                                input(type="checkbox", [(ngModel)]="form.immediate", name="collectorImmediate", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600")
+                                span 즉시 실행
+                        label(class="flex items-center justify-between rounded-md border border-zinc-200 px-3 py-2 text-[13px] text-zinc-700")
+                            span 유튜브 댓글 포함
+                            input(type="checkbox", [(ngModel)]="form.includeComments", name="collectorComments", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600")
+                        div(class="rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-500")
+                            p YouTube API 키 상태: {{ options.settings.youtubeApiKeyConfigured ? '설정됨' : '미설정, 샘플 응답 사용' }}
+                            p(class="mt-1") 웹 검색 Provider 상태: {{ options.settings.webSearchProviderConfigured ? '설정됨' : '미설정, 검색 링크 후보 저장' }}
+                            p(class="mt-1") 웹 수집은 robots.txt와 요청 제한을 기준으로 처리합니다.
+                        div(class="flex gap-2")
+                            button(type="submit", [disabled]="saving", class="flex-1 rounded-md bg-emerald-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60") {{ saving ? '요청 중' : '수집 요청' }}
+                            button(type="button", (click)="resetForm()", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+
+                section(class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="border-b border-zinc-200 px-4 py-3")
+                        h2(class="text-[15px] font-semibold text-zinc-950") 수집 프롬프트
+                        p(class="mt-0.5 text-xs leading-5 text-zinc-500") 수집 결과를 레시피 구조로 정리할 때 사용하는 기준입니다.
+                    div(class="space-y-3 p-4")
+                        textarea(readonly, [value]="promptForCurrentKeyword()", rows="8", class="block w-full resize-y rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-700 outline-none")
+                        div(class="rounded-md border border-sky-200 bg-sky-50 px-3 py-2")
+                            p(class="text-xs font-semibold text-sky-800") 안정화/개선점
+                            ul(class="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-sky-800")
+                                li(*ngFor="let note of improvementNotes") {{ note }}
+
+                section(class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex items-center justify-between border-b border-zinc-200 px-4 py-3")
+                        h2(class="text-[15px] font-semibold text-zinc-950") 수집 기록
+                        button(type="button", (click)="loadRequests(1)", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100") 조회
+                    div(class="space-y-2 p-3")
+                        form(class="grid grid-cols-[minmax(0,1fr)_110px] gap-2", (submit)="$event.preventDefault(); loadRequests(1)")
+                            input(type="search", [(ngModel)]="requestFilters.text", name="collectorRequestSearch", class="rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="요청 검색")
+                            select([(ngModel)]="requestFilters.status", name="collectorRequestStatus", class="rounded-md border border-zinc-300 bg-white px-2 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(value="") 전체
+                                option(*ngFor="let status of options.requestStatuses", [value]="status.value") {{ status.label }}
+                        div(*ngIf="requestLoading", class="rounded-md bg-zinc-50 p-4 text-center text-[13px] text-zinc-500") 기록 조회 중
+                        div(*ngIf="!requestLoading", class="max-h-[520px] space-y-2 overflow-auto")
+                            button(*ngFor="let item of requests", type="button", (click)="selectRequest(item)", [ngClass]="selectedRequest && selectedRequest.id === item.id ? 'border-emerald-500 bg-emerald-50' : 'border-zinc-200 bg-white'", class="block w-full rounded-md border p-3 text-left hover:border-emerald-300")
+                                div(class="flex items-start justify-between gap-2")
+                                    div(class="min-w-0")
+                                        p(class="truncate text-[13px] font-semibold text-zinc-950") {{ item.targetLabel || item.targetValue }}
+                                        p(class="mt-1 text-xs text-zinc-500") {{ targetLabel(item.targetType) }} · 결과 {{ item.resultCount || 0 }}개
+                                    span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-[11px] font-medium") {{ item.status }}
+                                p(*ngIf="item.errorMessage", class="mt-2 line-clamp-2 rounded bg-rose-50 px-2 py-1 text-xs text-rose-700") {{ item.errorMessage }}
+                                div(class="mt-2 flex items-center justify-between text-xs text-zinc-400")
+                                    span {{ item.createdAt || '-' }}
+                                    span 재시도 {{ item.retryCount || 0 }}회
+                            div(*ngIf="requests.length === 0", class="rounded-md bg-zinc-50 p-4 text-center text-[13px] text-zinc-500") 수집 기록이 없습니다.
+                    div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="loadRequests(requestPage - 1)", [disabled]="requestPage <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40") 이전
+                        span(class="text-xs text-zinc-500") {{ requestPage }} / {{ requestTotalPages }}
+                        button(type="button", (click)="loadRequests(requestPage + 1)", [disabled]="requestPage >= requestTotalPages", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40") 다음
+
+            main(class="flex min-w-0 flex-col gap-4")
+                section(class="rounded-lg border border-zinc-200 bg-white")
+                    div(class="flex flex-col gap-3 border-b border-zinc-200 px-4 py-3 lg:flex-row lg:items-center lg:justify-between")
+                        div
+                            h2(class="text-[15px] font-semibold text-zinc-950") 수집 결과
+                            p(class="mt-0.5 text-xs text-zinc-500") 총 {{ resultTotal }}개 · 선택 {{ selectedResultIds().length }}개
+                        div(class="flex flex-wrap gap-2")
+                            button(type="button", (click)="clearRequestFilter()", [disabled]="!resultFilters.requestId", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-40") 전체 결과
+                            button(type="button", (click)="promoteSelectedResults()", [disabled]="!selectedPromotableResultIds().length || promoting", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-40") {{ promoting ? '등록 중' : '레시피화 / 검수 대기 등록' }}
+                            button(type="button", (click)="deleteSelectedResults()", [disabled]="!selectedResultIds().length || actionLoadingId === 'delete-results'", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-40") 선택 삭제
+                            button(type="button", (click)="selectedRequest && retryRequest(selectedRequest)", [disabled]="!selectedRequest || actionLoadingId === selectedRequest.id", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-40") 요청 재시도
+                            button(type="button", (click)="selectedRequest && deleteRequest(selectedRequest)", [disabled]="!selectedRequest || actionLoadingId === selectedRequest.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-40") 요청 삭제
+                    div(*ngIf="promoteMessage", class="border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-[13px] text-emerald-800") {{ promoteMessage }}
+                    div(class="border-b border-zinc-200 p-3")
+                        form(class="grid gap-2 lg:grid-cols-[minmax(180px,1fr)_140px_auto]", (submit)="$event.preventDefault(); loadResults(1)")
+                            input(type="search", [(ngModel)]="resultFilters.text", name="collectorResultSearch", class="min-h-[38px] rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="제목, 출처, URL, 요약 검색")
+                            select([(ngModel)]="resultFilters.resultType", name="collectorResultType", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                                option(value="") 전체 유형
+                                option(value="web") 웹
+                                option(value="youtube") 유튜브
+                            div(class="flex gap-2")
+                                button(type="submit", class="min-h-[38px] rounded-md bg-zinc-900 px-3 text-[13px] font-medium text-white hover:bg-zinc-700") 검색
+                                button(type="button", (click)="resultFilters.text = ''; resultFilters.resultType = ''; loadResults(1)", class="min-h-[38px] rounded-md border border-zinc-300 bg-white px-3 text-[13px] font-medium text-zinc-700 hover:bg-zinc-100") 초기화
+                    div(*ngIf="resultLoading", class="p-8 text-center text-[13px] text-zinc-500") 결과 조회 중입니다.
+                    div(*ngIf="!resultLoading", class="overflow-x-auto")
+                        table(class="min-w-full divide-y divide-zinc-200 text-left text-[13px]")
+                            thead(class="bg-zinc-50 text-xs font-semibold text-zinc-500")
+                                tr
+                                    th(class="w-10 px-4 py-3") 선택
+                                    th(class="w-[34%] px-4 py-3") 제목 / URL
+                                    th(class="px-4 py-3") 유형
+                                    th(class="px-4 py-3") 출처 / 날짜
+                                    th(class="px-4 py-3") 지표
+                                    th(class="px-4 py-3") 요약 / 조리법
+                                    th(class="px-4 py-3 text-right") 액션
+                            tbody(class="divide-y divide-zinc-100 bg-white")
+                                tr(*ngFor="let item of results", class="align-top hover:bg-zinc-50")
+                                    td(class="px-4 py-3")
+                                        input(type="checkbox", [(ngModel)]="selectedIds[item.id]", [name]="'collectorResult' + item.id", [disabled]="item.promotedRecipeVersionId", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600 disabled:opacity-40")
+                                    td(class="px-4 py-3")
+                                        p(class="line-clamp-2 font-semibold text-zinc-950") {{ item.title || item.url }}
+                                        a(*ngIf="item.url", [href]="item.url", target="_blank", rel="noopener noreferrer", class="mt-1 block truncate text-xs font-medium text-emerald-700 hover:underline") {{ item.url }}
+                                        p(*ngIf="!item.url", class="mt-1 line-clamp-1 text-xs text-zinc-500") 링크 없음
+                                        p(*ngIf="item.promotedRecipeVersionId", class="mt-2 inline-flex rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700") 검수 대기 등록됨
+                                    td(class="px-4 py-3")
+                                        span([ngClass]="statusClass(item.status)", class="rounded border px-2 py-1 text-xs font-medium") {{ item.resultType }}
+                                    td(class="px-4 py-3 text-xs text-zinc-500")
+                                        p(class="font-medium text-zinc-700") {{ item.channelTitle || item.source || '-' }}
+                                        p(class="mt-1") {{ item.publishedAt || item.createdAt || '-' }}
+                                    td(class="px-4 py-3 text-xs text-zinc-500")
+                                        p 조회 {{ (item.viewCount || 0) | number }}
+                                        p 좋아요 {{ (item.likeCount || 0) | number }}
+                                        p 댓글 {{ (item.commentCount || 0) | number }}
+                                    td(class="px-4 py-3")
+                                        p(class="line-clamp-3 max-w-[360px] text-xs leading-5 text-zinc-600") {{ item.summary || '-' }}
+                                        div(*ngIf="hasRecipeDetail(item)", class="mt-2 max-w-[420px] rounded-md bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600")
+                                            p(*ngIf="item.ingredients && item.ingredients.length", class="font-medium text-zinc-800") 재료: {{ item.ingredients.join(', ') }}
+                                            ol(*ngIf="item.steps && item.steps.length", class="mt-1 list-decimal space-y-0.5 pl-4")
+                                                li(*ngFor="let step of item.steps") {{ step }}
+                                            div(*ngIf="item.sourceLinks && item.sourceLinks.length", class="mt-2 flex flex-wrap gap-1.5")
+                                                a(*ngFor="let link of item.sourceLinks", [href]="link.url", target="_blank", rel="noopener noreferrer", class="rounded border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50") {{ link.label || '원본 링크' }}
+                                    td(class="px-4 py-3 text-right")
+                                        button(type="button", (click)="openOriginal(item)", [disabled]="!item.url", class="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-40") 원본
+                                tr(*ngIf="results.length === 0")
+                                    td(colspan="7", class="px-4 py-10 text-center text-[13px] text-zinc-500") 조건에 맞는 수집 결과가 없습니다.
+                    div(class="flex items-center justify-between border-t border-zinc-200 px-4 py-3")
+                        button(type="button", (click)="loadResults(resultPage - 1)", [disabled]="resultPage <= 1", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40") 이전
+                        span(class="text-xs text-zinc-500") {{ resultPage }} / {{ resultTotalPages }} 페이지
+                        button(type="button", (click)="loadResults(resultPage + 1)", [disabled]="resultPage >= resultTotalPages", class="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40") 다음

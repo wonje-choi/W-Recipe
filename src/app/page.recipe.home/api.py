@@ -1,9 +1,6 @@
 import datetime
 import random
 
-struct = wiz.model("portal/recipe/struct")
-constants = wiz.model("portal/recipe/constants")
-
 
 def date_text(value):
     if isinstance(value, datetime.datetime):
@@ -13,7 +10,8 @@ def date_text(value):
     return value or ""
 
 
-def dish_dto(dish):
+def dish_dto(struct, dish):
+    dish = dish or {}
     thumbnail_url = dish.get("thumbnail_url", "")
     return {
         "id": dish.get("id"),
@@ -30,8 +28,36 @@ def dish_dto(dish):
     }
 
 
+def empty_payload():
+    return {
+        "recommended": [],
+        "popular": [],
+        "randomItems": [],
+        "latest": [],
+        "totals": {
+            "popular": 0,
+            "latest": 0,
+            "pool": 0,
+        },
+        "keywords": ["저염", "이유식", "간단요리", "고단백", "부드러운 식감"],
+    }
+
+
+def safe_dishes(struct, rows):
+    items = []
+    for row in rows or []:
+        try:
+            items.append(dish_dto(struct, row))
+        except Exception:
+            pass
+    return items
+
+
 def load():
+    payload = empty_payload()
     try:
+        struct = wiz.model("portal/recipe/struct")
+        constants = wiz.model("portal/recipe/constants")
         user_id = struct.session.get("id", "")
         popular_rows, popular_total = struct.recipe.search_dishes(page=1, dump=3, sort=constants.RECIPE_SORTS["VIEW_COUNT"])
         latest_rows, latest_total = struct.recipe.search_dishes(page=1, dump=6, sort=constants.RECIPE_SORTS["LATEST"])
@@ -41,23 +67,20 @@ def load():
             random_rows = random.sample(pool, 2)
         else:
             random_rows = pool
-        popular = [dish_dto(row) for row in popular_rows]
-        latest = [dish_dto(row) for row in latest_rows]
-        random_items = [dish_dto(row) for row in random_rows]
-        recommended = [dish_dto(row) for row in struct.recipe.get_recommended(user_id, limit=6)] if user_id else []
-    except Exception as error:
-        wiz.response.status(400, message=str(error))
-
-    wiz.response.status(
-        200,
-        recommended=recommended,
-        popular=popular,
-        randomItems=random_items,
-        latest=latest,
-        totals={
+        payload["popular"] = safe_dishes(struct, popular_rows)
+        payload["latest"] = safe_dishes(struct, latest_rows)
+        payload["randomItems"] = safe_dishes(struct, random_rows)
+        payload["totals"] = {
             "popular": popular_total,
             "latest": latest_total,
             "pool": pool_total,
-        },
-        keywords=["저염", "이유식", "간단요리", "고단백", "부드러운 식감"],
-    )
+        }
+        if user_id:
+            try:
+                payload["recommended"] = safe_dishes(struct, struct.recipe.get_recommended(user_id, limit=6))
+            except Exception:
+                payload["recommended"] = []
+    except Exception as error:
+        payload["message"] = str(error)
+
+    return wiz.response.status(200, **payload)

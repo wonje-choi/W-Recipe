@@ -43,7 +43,15 @@ export class Component implements OnInit {
     public async load() {
         this.loading = true;
         await this.service.render();
-        let { code, data } = await wiz.call('load', {});
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('load', {});
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            data = { message: '마이페이지를 불러오지 못했습니다.' };
+        }
         this.loading = false;
         if (code === 200) {
             this.profile = data.profile;
@@ -90,7 +98,15 @@ export class Component implements OnInit {
         this.savingProfile = true;
         this.message = '';
         await this.service.render();
-        let { code, data } = await wiz.call('save_profile', { nickname: this.profile.nickname });
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('save_profile', { nickname: this.profile.nickname });
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            data = { message: '프로필 저장에 실패했습니다.' };
+        }
         this.savingProfile = false;
         if (code === 200) {
             this.profile = data.profile;
@@ -110,7 +126,15 @@ export class Component implements OnInit {
             dislikedIngredients: this.toList(this.preferenceText.dislikedIngredients),
         });
         await this.service.render();
-        let { code, data } = await wiz.call('save_preference', payload);
+        let code = 500;
+        let data: any = {};
+        try {
+            let response = await wiz.call('save_preference', payload);
+            code = response.code;
+            data = response.data || {};
+        } catch (error) {
+            data = { message: '개인화 설정 저장에 실패했습니다.' };
+        }
         this.savingPreference = false;
         if (code === 200) {
             this.preference = data.preference;

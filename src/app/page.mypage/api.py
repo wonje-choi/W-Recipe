@@ -95,7 +95,10 @@ def ai_modification_dto(item):
 
 
 def favorite_dto(item):
-    version = struct.recipe.get_version(item.get("recipe_version_id", ""), public=True)
+    try:
+        version = struct.recipe.get_version(item.get("recipe_version_id", ""), public=True)
+    except Exception:
+        version = None
     return {
         "id": item.get("id"),
         "recipeVersionId": item.get("recipe_version_id", ""),
@@ -105,7 +108,10 @@ def favorite_dto(item):
 
 
 def recent_dto(item):
-    version = struct.recipe.get_version(item.get("recipe_version_id", ""), public=True)
+    try:
+        version = struct.recipe.get_version(item.get("recipe_version_id", ""), public=True)
+    except Exception:
+        version = None
     return {
         "id": item.get("id"),
         "recipeVersionId": item.get("recipe_version_id", ""),
@@ -134,6 +140,16 @@ def activity_payload(user_id):
     }
 
 
+def empty_activity():
+    return {
+        "comments": {"items": [], "total": 0},
+        "editRequests": {"items": [], "total": 0},
+        "aiModifications": {"items": [], "total": 0},
+        "favorites": {"items": [], "total": 0},
+        "recentViews": {"items": [], "total": 0},
+    }
+
+
 def option_payload():
     return {
         "dietTypes": ["저염", "이유식", "다이어트", "고단백", "채식", "저당"],
@@ -155,14 +171,16 @@ def option_payload():
 def load():
     user_id = struct.session_user_id()
     try:
+        if not user_id:
+            raise Exception("로그인이 필요합니다.")
         user = struct.user.get(user_id=user_id)
         if not user:
             raise Exception("사용자를 찾을 수 없습니다.")
-        preference = struct.user.preference(user_id)
-        activity = activity_payload(user_id)
+        preference = struct.user.preference(user_id) or {}
+        activity = activity_payload(user_id) or empty_activity()
     except Exception as error:
-        wiz.response.status(400, message=str(error))
-    wiz.response.status(
+        return wiz.response.status(400, message=str(error))
+    return wiz.response.status(
         200,
         profile=profile_dto(user),
         preference=preference_dto(preference),

@@ -31,6 +31,7 @@ class Struct:
         self._Expert = wiz.model("portal/recipe/struct/expert")
         self._Youtube = wiz.model("portal/recipe/struct/youtube")
         self._AdminLog = wiz.model("portal/recipe/struct/admin_log")
+        self._Collector = wiz.model("portal/recipe/struct/collector")
 
         self._init_tables()
 
@@ -52,6 +53,8 @@ class Struct:
             "expert",
             "expert_assignment",
             "admin_action_log",
+            "collection_request",
+            "collection_result",
         ]
         for name in tables:
             try:
@@ -253,5 +256,9 @@ class Struct:
     @property
     def admin_log(self):
         return self._AdminLog(self)
+
+    @property
+    def collector(self):
+        return self._Collector(self)
 
 Model = Struct()

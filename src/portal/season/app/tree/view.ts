@@ -149,7 +149,7 @@ export class Component implements OnInit {
         event.stopPropagation();
         event.preventDefault();
 
-        let files = await this.service.file.drop(event);
+        let files: any[] = await this.service.file.drop(event) as any[];
         if (files.length > 0) {
             if (this.config.upload) await this.config.upload(node, files);
             let root_id = this.dragToItem.id ? this.dragToItem.id : '';

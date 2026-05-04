@@ -3,7 +3,7 @@ import $ from "jquery";
 export default class Request {
     constructor() { }
 
-    public async post(url: string, data: any = {}) {
+    public async post(url: string, data: any = {}): Promise<any> {
         let request = () => {
             return new Promise((resolve) => {
                 $.ajax({

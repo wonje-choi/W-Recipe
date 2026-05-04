@@ -4,7 +4,13 @@ import { URLPattern } from "urlpattern-polyfill";
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-let app_routes: Routes = wiz.routes();
+declare global {
+    interface Window {
+        WizRoute: RouteInfo;
+    }
+}
+
+let app_routes: any[] = wiz.routes();
 
 export class RouteInfo {
     public path: any = "";
@@ -23,7 +29,7 @@ let patternMatcher = (pattern: any, url: any) => {
     pattern = new URLPattern({ pathname: pattern });
     pattern = pattern.exec(urlpath)
     if (pattern && pattern.pathname) {
-        let posParams = {};
+        let posParams: any = {};
         for (let key in pattern.pathname.groups) {
             if (pattern.pathname.groups[key]) {
                 posParams[key] = pattern.pathname.groups[key];
@@ -41,7 +47,7 @@ let routes: Routes = [{
     matcher: (url: any) => {
         for (let i = 0; i < app_routes.length; i++) {
             let layout = app_routes[i];
-            let layout_childs = layout.children;
+            let layout_childs = layout.children || [];
             for (let j = 0; j < layout_childs.length; j++) {
                 let child = layout_childs[j];
                 let matcher = patternMatcher(child.path, url);
@@ -57,7 +63,7 @@ let routes: Routes = [{
 for (let i = 0; i < app_routes.length; i++) {
     let layout = app_routes[i];
     let layout_component = layout.component;
-    let layout_childs = layout.children;
+    let layout_childs = layout.children || [];
 
     let router: any = {
         path: '',

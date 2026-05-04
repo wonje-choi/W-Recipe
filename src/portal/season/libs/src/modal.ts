@@ -4,6 +4,7 @@ export default class Modal {
 
     public isshow: boolean = false;
     public callback: any = null;
+    public cancel: any = async () => { };
     public hide: any = async () => { };
     public action: any = async () => { };
     public default_opts: any = {
@@ -35,7 +36,7 @@ export default class Modal {
             this.hide = async () => {
                 this.isshow = false;
                 await this.service.render();
-                resolve();
+                resolve(true);
             }
 
             this.action = async (data: any = true) => {

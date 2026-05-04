@@ -3,3 +3,27 @@
     flex-direction: column;
     min-height: 100%;
 }
+
+.recipe-nav-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+
+.recipe-nav-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.recipe-nav-item {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    line-height: 1.2;
+    max-width: 132px;
+    min-height: 36px;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

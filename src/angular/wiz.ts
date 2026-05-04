@@ -69,7 +69,7 @@ export default class Wiz {
         return this.baseuri + "/api/" + this.namespace + "/" + function_name;
     }
 
-    public call(function_name: string, data = {}, options = {}) {
+    public call(function_name: string, data: any = {}, options: any = {}): Promise<any> {
         let csrfToken = (window as any).recipeCsrfToken || '';
         let optionHeaders = (options as any).headers || {};
         let headers = {
