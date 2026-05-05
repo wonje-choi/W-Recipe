@@ -15,6 +15,7 @@ export class Component implements OnInit {
     public promoteMessage: string = '';
     public options: any = { targetTypes: [], requestStatuses: [], resultStatuses: [], limits: { maxItems: 50, defaultItems: 10 }, settings: {} };
     public collectorPrompt: string = '';
+    public currentPrompt: string = '';
     public improvementNotes: string[] = [];
     public requests: any[] = [];
     public results: any[] = [];
@@ -27,6 +28,9 @@ export class Component implements OnInit {
     public resultDump: number = 12;
     public selectedRequest: any = null;
     public selectedIds: any = {};
+    public selectedCount: number = 0;
+    public selectedPromotableCount: number = 0;
+    public targetTypeLabelMap: any = {};
 
     public form: any = this.blankForm();
     public requestFilters: any = { text: '', status: '' };
@@ -54,19 +58,63 @@ export class Component implements OnInit {
         let { code, data } = await wiz.call('dashboard', {});
         this.loading = false;
         if (code === 200) {
-            this.options = data.options || this.options;
-            this.collectorPrompt = this.options.collectorPrompt || '';
-            this.improvementNotes = this.options.improvementNotes || [];
-            this.requests = data.requests || [];
-            this.results = data.results || [];
+            this.applyOptions(data.options || this.options);
+            this.requests = this.decorateRequests(data.requests || []);
+            this.results = this.decorateResults(data.results || []);
             this.requestTotal = data.requestTotal || 0;
             this.resultTotal = data.resultTotal || 0;
             this.statusSummary = data.statusSummary || [];
             if (!this.selectedRequest && this.requests.length) this.selectedRequest = this.requests[0];
+            this.refreshSelectionState();
         } else {
             this.message = data.message || '수집 대시보드를 불러오지 못했습니다.';
         }
         await this.service.render();
+    }
+
+    public applyOptions(options: any) {
+        this.options = options || this.options;
+        this.collectorPrompt = this.options.collectorPrompt || '';
+        this.improvementNotes = this.options.improvementNotes || [];
+        this.targetTypeLabelMap = {};
+        for (let item of this.options.targetTypes || []) {
+            this.targetTypeLabelMap[item.value] = item.label;
+        }
+        this.updateCurrentPrompt();
+    }
+
+    public decorateRequests(items: any[]) {
+        return (items || []).map((item: any) => {
+            return {
+                ...item,
+                targetTypeLabel: this.targetLabel(item.targetType),
+                statusClassName: this.statusClass(item.status),
+            };
+        });
+    }
+
+    public decorateResults(items: any[]) {
+        return (items || []).map((item: any) => {
+            return {
+                ...item,
+                statusClassName: this.statusClass(item.status),
+                hasRecipeDetail: !!item.hasRecipeDetail || this.hasRecipeDetail(item),
+            };
+        });
+    }
+
+    public refreshSelectionState() {
+        let selected = this.selectedResultIds();
+        let promoted: any = {};
+        for (let item of this.results || []) {
+            if (item.promotedRecipeVersionId) promoted[item.id] = true;
+        }
+        this.selectedCount = selected.length;
+        this.selectedPromotableCount = selected.filter((id) => !promoted[id]).length;
+    }
+
+    public updateCurrentPrompt() {
+        this.currentPrompt = this.promptForCurrentKeyword();
     }
 
     public async submitRequest() {
@@ -96,6 +144,7 @@ export class Component implements OnInit {
     public async resetForm() {
         this.form = this.blankForm();
         this.formMessage = '';
+        this.updateCurrentPrompt();
         await this.service.render();
     }
 
@@ -103,7 +152,13 @@ export class Component implements OnInit {
         this.form.targetType = type === 'youtube' ? 'youtube_keyword' : 'web_keyword';
         if (!this.form.targetValue) this.form.targetValue = '김치찌개';
         this.formMessage = type === 'youtube' ? '유튜브 키워드 수집 모드입니다.' : '웹 키워드 수집 모드입니다.';
+        this.updateCurrentPrompt();
         await this.service.render();
+    }
+
+    public syncPrompt(field: string, value: any) {
+        this.form[field] = value;
+        this.updateCurrentPrompt();
     }
 
     public promptForCurrentKeyword() {
@@ -129,7 +184,7 @@ export class Component implements OnInit {
         });
         this.requestLoading = false;
         if (code === 200) {
-            this.requests = data.items || [];
+            this.requests = this.decorateRequests(data.items || []);
             this.requestTotal = data.total || 0;
             this.statusSummary = data.statusSummary || [];
         } else {
@@ -151,9 +206,10 @@ export class Component implements OnInit {
         });
         this.resultLoading = false;
         if (code === 200) {
-            this.results = data.items || [];
+            this.results = this.decorateResults(data.items || []);
             this.resultTotal = data.total || 0;
             this.selectedIds = {};
+            this.refreshSelectionState();
         } else {
             this.message = data.message || '수집 결과를 불러오지 못했습니다.';
         }
@@ -214,6 +270,11 @@ export class Component implements OnInit {
             if (item.promotedRecipeVersionId) promoted[item.id] = true;
         }
         return this.selectedResultIds().filter((id) => !promoted[id]);
+    }
+
+    public async toggleSelection() {
+        this.refreshSelectionState();
+        await this.service.render();
     }
 
     public async promoteSelectedResults() {
@@ -297,8 +358,7 @@ export class Component implements OnInit {
     }
 
     public targetLabel(value: string) {
-        let matched = (this.options.targetTypes || []).find((item: any) => item.value === value);
-        return matched ? matched.label : value;
+        return this.targetTypeLabelMap[value] || value;
     }
 
     public get requestTotalPages() {

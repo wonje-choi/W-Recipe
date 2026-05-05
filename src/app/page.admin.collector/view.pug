@@ -30,10 +30,10 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                             button(type="button", (click)="useKeywordMode('web')", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100") 웹 키워드
                             button(type="button", (click)="useKeywordMode('youtube')", class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100") 유튜브 키워드
                         label(class="block text-xs font-medium text-zinc-600") 수집 타입
-                            select([(ngModel)]="form.targetType", name="collectorTargetType", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
+                            select([ngModel]="form.targetType", (ngModelChange)="syncPrompt('targetType', $event)", name="collectorTargetType", class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
                                 option(*ngFor="let type of options.targetTypes", [value]="type.value") {{ type.label }}
                         label(class="block text-xs font-medium text-zinc-600") 키워드 또는 URL
-                            textarea([(ngModel)]="form.targetValue", name="collectorTargetValue", rows="4", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] leading-6 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://example.com 또는 검색어")
+                            textarea([ngModel]="form.targetValue", (ngModelChange)="syncPrompt('targetValue', $event)", name="collectorTargetValue", rows="4", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] leading-6 outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", placeholder="https://example.com 또는 검색어")
                         div(class="grid grid-cols-2 gap-3")
                             label(class="block text-xs font-medium text-zinc-600") 최대 개수
                                 input(type="number", min="1", [max]="options.limits.maxItems", [(ngModel)]="form.maxItems", name="collectorMaxItems", class="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-[13px] outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600")
@@ -56,7 +56,7 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                         h2(class="text-[15px] font-semibold text-zinc-950") 수집 프롬프트
                         p(class="mt-0.5 text-xs leading-5 text-zinc-500") 수집 결과를 레시피 구조로 정리할 때 사용하는 기준입니다.
                     div(class="space-y-3 p-4")
-                        textarea(readonly, [value]="promptForCurrentKeyword()", rows="8", class="block w-full resize-y rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-700 outline-none")
+                        textarea(readonly, [value]="currentPrompt", rows="8", class="block w-full resize-y rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-700 outline-none")
                         div(class="rounded-md border border-sky-200 bg-sky-50 px-3 py-2")
                             p(class="text-xs font-semibold text-sky-800") 안정화/개선점
                             ul(class="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-sky-800")
@@ -78,8 +78,8 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                                 div(class="flex items-start justify-between gap-2")
                                     div(class="min-w-0")
                                         p(class="truncate text-[13px] font-semibold text-zinc-950") {{ item.targetLabel || item.targetValue }}
-                                        p(class="mt-1 text-xs text-zinc-500") {{ targetLabel(item.targetType) }} · 결과 {{ item.resultCount || 0 }}개
-                                    span([ngClass]="statusClass(item.status)", class="shrink-0 rounded border px-2 py-1 text-[11px] font-medium") {{ item.status }}
+                                        p(class="mt-1 text-xs text-zinc-500") {{ item.targetTypeLabel }} · 결과 {{ item.resultCount || 0 }}개
+                                    span([ngClass]="item.statusClassName", class="shrink-0 rounded border px-2 py-1 text-[11px] font-medium") {{ item.status }}
                                 p(*ngIf="item.errorMessage", class="mt-2 line-clamp-2 rounded bg-rose-50 px-2 py-1 text-xs text-rose-700") {{ item.errorMessage }}
                                 div(class="mt-2 flex items-center justify-between text-xs text-zinc-400")
                                     span {{ item.createdAt || '-' }}
@@ -95,11 +95,11 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                     div(class="flex flex-col gap-3 border-b border-zinc-200 px-4 py-3 lg:flex-row lg:items-center lg:justify-between")
                         div
                             h2(class="text-[15px] font-semibold text-zinc-950") 수집 결과
-                            p(class="mt-0.5 text-xs text-zinc-500") 총 {{ resultTotal }}개 · 선택 {{ selectedResultIds().length }}개
+                            p(class="mt-0.5 text-xs text-zinc-500") 총 {{ resultTotal }}개 · 선택 {{ selectedCount }}개
                         div(class="flex flex-wrap gap-2")
                             button(type="button", (click)="clearRequestFilter()", [disabled]="!resultFilters.requestId", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-40") 전체 결과
-                            button(type="button", (click)="promoteSelectedResults()", [disabled]="!selectedPromotableResultIds().length || promoting", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-40") {{ promoting ? '등록 중' : '레시피화 / 검수 대기 등록' }}
-                            button(type="button", (click)="deleteSelectedResults()", [disabled]="!selectedResultIds().length || actionLoadingId === 'delete-results'", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-40") 선택 삭제
+                            button(type="button", (click)="promoteSelectedResults()", [disabled]="!selectedPromotableCount || promoting", class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-40") {{ promoting ? '등록 중' : '레시피화 / 검수 대기 등록' }}
+                            button(type="button", (click)="deleteSelectedResults()", [disabled]="!selectedCount || actionLoadingId === 'delete-results'", class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-40") 선택 삭제
                             button(type="button", (click)="selectedRequest && retryRequest(selectedRequest)", [disabled]="!selectedRequest || actionLoadingId === selectedRequest.id", class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-40") 요청 재시도
                             button(type="button", (click)="selectedRequest && deleteRequest(selectedRequest)", [disabled]="!selectedRequest || actionLoadingId === selectedRequest.id", class="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-40") 요청 삭제
                     div(*ngIf="promoteMessage", class="border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-[13px] text-emerald-800") {{ promoteMessage }}
@@ -128,14 +128,14 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                             tbody(class="divide-y divide-zinc-100 bg-white")
                                 tr(*ngFor="let item of results", class="align-top hover:bg-zinc-50")
                                     td(class="px-4 py-3")
-                                        input(type="checkbox", [(ngModel)]="selectedIds[item.id]", [name]="'collectorResult' + item.id", [disabled]="item.promotedRecipeVersionId", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600 disabled:opacity-40")
+                                        input(type="checkbox", [(ngModel)]="selectedIds[item.id]", (change)="toggleSelection()", [name]="'collectorResult' + item.id", [disabled]="item.promotedRecipeVersionId", class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600 disabled:opacity-40")
                                     td(class="px-4 py-3")
                                         p(class="line-clamp-2 font-semibold text-zinc-950") {{ item.title || item.url }}
                                         a(*ngIf="item.url", [href]="item.url", target="_blank", rel="noopener noreferrer", class="mt-1 block truncate text-xs font-medium text-emerald-700 hover:underline") {{ item.url }}
                                         p(*ngIf="!item.url", class="mt-1 line-clamp-1 text-xs text-zinc-500") 링크 없음
                                         p(*ngIf="item.promotedRecipeVersionId", class="mt-2 inline-flex rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700") 검수 대기 등록됨
                                     td(class="px-4 py-3")
-                                        span([ngClass]="statusClass(item.status)", class="rounded border px-2 py-1 text-xs font-medium") {{ item.resultType }}
+                                        span([ngClass]="item.statusClassName", class="rounded border px-2 py-1 text-xs font-medium") {{ item.resultType }}
                                     td(class="px-4 py-3 text-xs text-zinc-500")
                                         p(class="font-medium text-zinc-700") {{ item.channelTitle || item.source || '-' }}
                                         p(class="mt-1") {{ item.publishedAt || item.createdAt || '-' }}
@@ -145,7 +145,7 @@ section(class="min-h-full bg-zinc-50 px-4 py-5 sm:px-6 lg:px-8")
                                         p 댓글 {{ (item.commentCount || 0) | number }}
                                     td(class="px-4 py-3")
                                         p(class="line-clamp-3 max-w-[360px] text-xs leading-5 text-zinc-600") {{ item.summary || '-' }}
-                                        div(*ngIf="hasRecipeDetail(item)", class="mt-2 max-w-[420px] rounded-md bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600")
+                                        div(*ngIf="item.hasRecipeDetail", class="mt-2 max-w-[420px] rounded-md bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600")
                                             p(*ngIf="item.ingredients && item.ingredients.length", class="font-medium text-zinc-800") 재료: {{ item.ingredients.join(', ') }}
                                             ol(*ngIf="item.steps && item.steps.length", class="mt-1 list-decimal space-y-0.5 pl-4")
                                                 li(*ngFor="let step of item.steps") {{ step }}

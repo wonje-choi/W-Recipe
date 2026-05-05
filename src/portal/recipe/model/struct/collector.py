@@ -15,6 +15,10 @@ TARGET_TYPES = ["web_url", "web_keyword", "youtube_video", "youtube_channel", "y
 WEB_TYPES = set(["web_url", "web_keyword"])
 YOUTUBE_TYPES = set(["youtube_video", "youtube_channel", "youtube_keyword"])
 MAX_ITEMS_LIMIT = 50
+MAX_PAGE_DUMP = 100
+SEARCH_SCAN_LIMIT = 500
+EXPORT_LIMIT = 1000
+DELETE_BATCH_SIZE = 500
 USER_AGENT = "RecipeTasteCollector/1.0"
 
 class Collector:
@@ -48,6 +52,14 @@ class Collector:
         if value in ["false", "False", "0", 0]:
             return False
         return default
+
+    def clamp_int(self, value, default=1, min_value=1, max_value=100):
+        number = self.to_int(value, default)
+        if number < min_value:
+            return min_value
+        if number > max_value:
+            return max_value
+        return number
 
     def url_hash(self, url):
         return hashlib.sha256(str(url or "").strip().encode("utf-8")).hexdigest()
@@ -139,6 +151,9 @@ class Collector:
 
     def result_dto(self, item):
         raw_metadata = self.result_raw_metadata(item)
+        ingredients = self.normalize_recipe_list(raw_metadata.get("ingredients"), 120)
+        steps = self.normalize_recipe_list(raw_metadata.get("steps"), 500)
+        source_links = self.normalize_source_links(raw_metadata.get("sourceLinks"))
         return {
             "id": item.get("id"),
             "requestId": item.get("request_id", ""),
@@ -155,9 +170,10 @@ class Collector:
             "commentCount": int(item.get("comment_count") or 0),
             "status": item.get("status", "stored"),
             "rawMetadata": raw_metadata,
-            "ingredients": raw_metadata.get("ingredients", []),
-            "steps": raw_metadata.get("steps", []),
-            "sourceLinks": raw_metadata.get("sourceLinks", []),
+            "ingredients": ingredients,
+            "steps": steps,
+            "sourceLinks": source_links,
+            "hasRecipeDetail": bool(ingredients or steps or source_links),
             "recipePrompt": raw_metadata.get("recipePrompt", ""),
             "promotedRecipeDishId": raw_metadata.get("promotedRecipeDishId", ""),
             "promotedRecipeVersionId": raw_metadata.get("promotedRecipeVersionId", ""),
@@ -165,6 +181,24 @@ class Collector:
             "createdAt": self.date_text(item.get("created_at")),
             "updatedAt": self.date_text(item.get("updated_at")),
         }
+
+    def normalize_source_links(self, value):
+        if not isinstance(value, list):
+            return []
+        links = []
+        seen = set()
+        for item in value[:10]:
+            if isinstance(item, dict):
+                url = self.clean_text(item.get("url", ""), 2048)
+                label = self.clean_text(item.get("label", "원본 링크"), 80)
+            else:
+                url = self.clean_text(item, 2048)
+                label = "원본 링크"
+            if not url or not url.startswith("http") or url in seen:
+                continue
+            seen.add(url)
+            links.append({"url": url, "label": label or "원본 링크"})
+        return links
 
     def options(self):
         return {
@@ -251,11 +285,13 @@ class Collector:
             raise Exception("수집 요청을 찾을 수 없습니다.")
         return item
 
-    def list_requests(self, page=1, dump=20, status="", text=""):
+    def list_requests(self, page=1, dump=20, status="", text="", max_dump=MAX_PAGE_DUMP):
         filters = {}
         if status:
             filters["status"] = status
-        rows = self.request_db.rows(page=1 if text else page, dump=500 if text else dump, orderby="created_at", order="DESC", **filters)
+        page = self.clamp_int(page, 1, 1, 100000)
+        dump = self.clamp_int(dump, 20, 1, max_dump)
+        rows = self.request_db.rows(page=1 if text else page, dump=SEARCH_SCAN_LIMIT if text else dump, orderby="created_at", order="DESC", **filters)
         total = self.request_db.count(**filters) or 0
         if text:
             needle = str(text).lower()
@@ -269,7 +305,7 @@ class Collector:
             rows = matched[start:start + dump]
         return rows, total
 
-    def list_results(self, page=1, dump=20, request_id="", result_type="", status="", text=""):
+    def list_results(self, page=1, dump=20, request_id="", result_type="", status="", text="", max_dump=MAX_PAGE_DUMP):
         filters = {}
         if request_id:
             filters["request_id"] = request_id
@@ -277,7 +313,9 @@ class Collector:
             filters["result_type"] = result_type
         if status:
             filters["status"] = status
-        rows = self.result_db.rows(page=1 if text else page, dump=1000 if text else dump, orderby="created_at", order="DESC", **filters)
+        page = self.clamp_int(page, 1, 1, 100000)
+        dump = self.clamp_int(dump, 20, 1, max_dump)
+        rows = self.result_db.rows(page=1 if text else page, dump=SEARCH_SCAN_LIMIT if text else dump, orderby="created_at", order="DESC", **filters)
         total = self.result_db.count(**filters) or 0
         if text:
             needle = str(text).lower()
@@ -295,9 +333,12 @@ class Collector:
         return [{"value": status, "label": status, "count": self.request_db.count(status=status) or 0} for status in REQUEST_STATUSES]
 
     def clear_results(self, request_id):
-        rows = self.result_db.rows(request_id=request_id, page=1, dump=1000)
-        for row in rows:
-            self.result_db.delete(id=row.get("id"))
+        while True:
+            rows = self.result_db.rows(request_id=request_id, page=1, dump=DELETE_BATCH_SIZE)
+            if not rows:
+                break
+            for row in rows:
+                self.result_db.delete(id=row.get("id"))
 
     def execute_request(self, request_id):
         request = self.get_request(request_id)
@@ -685,12 +726,12 @@ class Collector:
         ids = ids or []
         if ids:
             rows = []
-            for result_id in ids:
+            for result_id in ids[:EXPORT_LIMIT]:
                 row = self.result_db.get(id=result_id)
                 if row:
                     rows.append(row)
         else:
-            rows, total = self.list_results(page=1, dump=1000, result_type=result_type, text=text)
+            rows, total = self.list_results(page=1, dump=EXPORT_LIMIT, result_type=result_type, text=text, max_dump=EXPORT_LIMIT)
         items = [self.result_dto(row) for row in rows]
         if file_format == "csv":
             output = io.StringIO()

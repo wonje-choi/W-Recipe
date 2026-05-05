@@ -11,6 +11,15 @@ def to_int(value, default):
         return default
 
 
+def clamp_int(value, default, min_value, max_value):
+    number = to_int(value, default)
+    if number < min_value:
+        return min_value
+    if number > max_value:
+        return max_value
+    return number
+
+
 def request_data():
     raw = wiz.request.query("data", "")
     if raw:
@@ -75,8 +84,8 @@ def create_request():
 
 
 def requests():
-    page = to_int(wiz.request.query("page", 1), 1)
-    dump = to_int(wiz.request.query("dump", 10), 10)
+    page = clamp_int(wiz.request.query("page", 1), 1, 1, 100000)
+    dump = clamp_int(wiz.request.query("dump", 10), 10, 1, 100)
     status = wiz.request.query("status", "")
     text = wiz.request.query("text", "")
     try:
@@ -119,8 +128,8 @@ def delete_request():
 
 
 def results():
-    page = to_int(wiz.request.query("page", 1), 1)
-    dump = to_int(wiz.request.query("dump", 20), 20)
+    page = clamp_int(wiz.request.query("page", 1), 1, 1, 100000)
+    dump = clamp_int(wiz.request.query("dump", 20), 20, 1, 100)
     request_id = wiz.request.query("requestId", wiz.request.query("request_id", ""))
     result_type = wiz.request.query("resultType", wiz.request.query("result_type", ""))
     status = wiz.request.query("status", "")
